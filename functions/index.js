@@ -38,3 +38,17 @@ exports.makeUppercase = functions.database.ref('/messages/{pushId}/original')
 // exports.helloWorld = functions.https.onRequest((request, response) => {
 //  response.send("Hello from Firebase!");
 // });
+exports.jsonMessage = functions.https.onRequest((req, res) => {
+    // Grab the text parameter.
+    const original = req.query.text;
+      console.log('Uppercasing', context.params.pushId, original);
+      // You must return a Promise when performing asynchronous tasks inside a Functions such as
+      // writing to the Firebase Realtime Database.
+      // Setting an "uppercase" sibling in the Realtime Database returns a Promise.
+          var data = {
+        sampleTime: '1450632410296',
+        data: '76.36731:3.4651554:0.5665419',
+        text: original
+    };
+      return data;
+    });
