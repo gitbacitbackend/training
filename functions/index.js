@@ -40,7 +40,7 @@ exports.makeUppercase = functions.database.ref('/messages/{pushId}/original')
 // exports.helloWorld = functions.https.onRequest((request, response) => {
 //  response.send("Hello from Firebase!");
 // });
-exports.jsonTest = functions.https.onRequest((req, res) => {
+exports.jsonMessage = functions.https.onRequest((req, res) => {
     // Grab the text parameter.
     const original = req.query.text;
       //console.log('Uppercasing', context.params.pushId, original);
