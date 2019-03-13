@@ -4,7 +4,9 @@ const functions = require('firebase-functions');
 
 // The Firebase Admin SDK to access the Firebase Realtime Database.
 const admin = require('firebase-admin');
-admin.initializeApp();
+admin.initializeApp(functions.config().firebase);
+
+var db = admin.firestore();
 
 // Take the text parameter passed to this HTTP endpoint and insert it into the
 // Realtime Database under the path /messages/:pushId/original
@@ -38,3 +40,11 @@ exports.makeUppercase = functions.database.ref('/messages/{pushId}/original')
 // exports.helloWorld = functions.https.onRequest((request, response) => {
 //  response.send("Hello from Firebase!");
 // });
+
+var docRef = db.collection('users').doc('alovelace');
+
+var setAda = docRef.set({
+  first: 'Ada',
+  last: 'Lovelace',
+  born: 1815
+});
