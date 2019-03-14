@@ -1,6 +1,7 @@
 //https://us-central1-mmfapp-3603c.cloudfunctions.net/addMessage?text=
 // The Cloud Functions for Firebase SDK to create Cloud Functions and setup triggers.
 const functions = require('firebase-functions');
+const cors = require('cors')({oriogin: true});
 
 // The Firebase Admin SDK to access the Firebase Realtime Database.
 const admin = require('firebase-admin');
@@ -41,8 +42,9 @@ exports.makeUppercase = functions.database.ref('/messages/{pushId}/original')
 //  response.send("Hello from Firebase!");
 // });
 exports.jsonMessage = functions.https.onRequest((req, res) => {
-    // Grab the text parameter.
-    const original = req.query.text;
+    // cors wrapper for cross platform(app) access
+    cors(req, res,() => {
+      const original = req.query.text;
       //console.log('Uppercasing', context.params.pushId, original);
       // You must return a Promise when performing asynchronous tasks inside a Functions such as
       // writing to the Firebase Realtime Database.
@@ -51,7 +53,9 @@ exports.jsonMessage = functions.https.onRequest((req, res) => {
         sampleTime: '1450632410296',
         data: '76.36731:3.4651554:0.5665419',
         text: original
+      });
     });
+
       //return data;
-    });
+  });
     
