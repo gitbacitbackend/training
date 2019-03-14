@@ -58,4 +58,33 @@ exports.jsonMessage = functions.https.onRequest((req, res) => {
 
       //return data;
   });
+
+  exports.registerMood = functions.https.onRequest((req, res) => {
+    const getmood = req.query.text;
+    // cors wrapper for cross platform(app) access
+    cors(req, res,() => {
+      if (req.method !== "POST") {
+          return res.status(420).json({
+              message: "Only POST allowed"
+          });
+      }
+      
+      let data = {
+        user: "test",
+        mood: getmood
+      };
+      
+      var setDoc = db.collection('torCollection').doc('newMooder').set(data);
+
+      //console.log('Uppercasing', context.params.pushId, original);
+      // You must return a Promise when performing asynchronous tasks inside a Functions such as
+      // writing to the Firebase Realtime Database.
+      // Setting an "uppercase" sibling in the Realtime Database returns a Promise.
+          return res.status(200).json({
+        sampleTime: '1450632410296',
+        data: '76.36731:3.4651554:0.5665419',
+        text: getmood
+      });
+    });
+  });
     
