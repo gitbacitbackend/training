@@ -166,3 +166,49 @@ exports.jsonMessage = functions.https.onRequest((req, res) => {
         })
   });
 });
+
+/*
+var cityRef = db.collection('cities').doc('SF');
+var getDoc = cityRef
+  .get()
+  .then(doc => {
+    if (!doc.exists) {
+      console.log('No such document!');
+    } else {
+      console.log('Document data:', doc.data());
+    }
+    return
+  })
+  .catch(err => {
+    console.log('Error getting document', err);
+  });
+*/
+  
+exports.getOneUser = functions.https.onRequest((req, res) => {
+  let getUserName = req.query.user;
+  let getUser = db.collection('users').doc(getUserName);
+  let result = [];
+
+  cors(req, res,() => {
+    if (req.method !== "GET") {
+        return res.status(420).json({
+            message: "Only GET allowed"
+        });
+    }
+
+    var users = getUser.get()
+      .then(doc => {
+        if (!doc.exists) {
+          console.log('No such document!');
+        } else {
+          console.log('Document data:', doc.data());
+          result.push(doc.data());
+        }
+        return res.status(200)
+        .json({result}); 
+      })
+      .catch(err => {
+        console.log('Error getting documents', err);
+      })
+});
+});
