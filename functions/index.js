@@ -79,6 +79,17 @@ exports.jsonMessage = functions.https.onRequest((req, res) => {
       let collection = "torCollection"
       let setDoc = db.collection(collection).doc(getUser).set(data);
 
+      const query  = db.collection(collection).where('user', '=', getUser);
+
+      let result;
+        query.onSnapshot(products => {
+
+          products.forEach(doc => {
+              result = doc.data();
+          })
+
+        });
+
       //console.log('Uppercasing', context.params.pushId, original);
       // You must return a Promise when performing asynchronous tasks inside a Functions such as
       // writing to the Firebase Realtime Database.
@@ -87,8 +98,44 @@ exports.jsonMessage = functions.https.onRequest((req, res) => {
         toCollection: collection,
         toUser: getUser,
         toMood: getMood,
+        queryRes: result,
         comment: getComment
+        
       });
     });
   });
+  exports.getMusic = functions.https.onRequest((req, res) => {
+    cors(req, res,() => {
+
+      const getUser = req.query.user;
+      let result = [];
+      const query  = db.collection("torCollection")
+      var users = query.where('user', '==', getUser).get().then(snapshot => {
+        if (snapshot.empty) {
+          return res.status(418).json({
+            error: 'No matching documents.'
+          })
+        }
+          snapshot.forEach(doc => {
+            console.log(doc.id, '=>', doc.data());
+            result.push(doc.data());
+          });
+          return res.status(200).json({
+            restRes: result
+          })
+        })
+        .catch(err => {
+          let errmsg = 'Error getting documents' + err;
+          return rest.status(420).json=({
+            error: errmsg
+          })
+        });
     
+
+        // return res.status(200).json({
+        //   searchFor: getUser,
+        //   queryRes: result
+
+        // });
+    });
+  });
