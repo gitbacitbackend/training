@@ -1,7 +1,7 @@
 //https://us-central1-mmfapp-3603c.cloudfunctions.net/addMessage?text=
 // The Cloud Functions for Firebase SDK to create Cloud Functions and setup triggers.
 const functions = require('firebase-functions');
-const cors = require('cors')({oriogin: true});
+const cors = require('cors')({origin: true});
 
 // The Firebase Admin SDK to access the Firebase Realtime Database.
 const admin = require('firebase-admin');
