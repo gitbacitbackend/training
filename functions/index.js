@@ -139,3 +139,30 @@ exports.jsonMessage = functions.https.onRequest((req, res) => {
         // });
     });
   });
+
+  exports.getAllUsers = functions.https.onRequest((req, res) => {
+    let collection = "users"
+    let getUsers = db.collection(collection);
+    let result = [];
+
+    cors(req, res,() => {
+      if (req.method !== "GET") {
+          return res.status(420).json({
+              message: "Only GET allowed"
+          });
+      }
+
+      getUsers.get()
+        .then(snapshot => {
+          snapshot.forEach(doc => {
+            console.log(doc.id, '=>', doc.data());
+            result.push(doc.data());
+          });
+          return res.status(200)
+          .json({users: result});
+        })  
+        .catch(err => {
+          console.log('Error getting documents', err);
+        })
+  });
+});
