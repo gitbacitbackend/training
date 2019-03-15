@@ -107,29 +107,61 @@ exports.jsonMessage = functions.https.onRequest((req, res) => {
   exports.getMusic = functions.https.onRequest((req, res) => {
     cors(req, res,() => {
 
-      const getUser = req.query.user;
-      let result = [];
-      const query  = db.collection("torCollection")
-      var users = query.where('user', '==', getUser).get().then(snapshot => {
-        if (snapshot.empty) {
-          return res.status(418).json({
-            error: 'No matching documents.'
+      const getUser = req.query.userID;
+      const getMood = req.query.mood;
+      const getType = req.query.type;
+
+      const query  = db.collection("Music")
+
+      // Getter for specific mood by user
+      if(getUser !== undefined && getMood !== undefined) {
+        let result = [];
+        let users = query.where('userID', '==', getUser).where('mood', '==', getMood).get().then(snapshot => {
+          if (snapshot.empty) {
+            return res.status(418).json({
+              error: 'No matching documents.'
+            })
+          }
+            snapshot.forEach(doc => {
+              console.log(doc.id, '=>', doc.data());
+              result.push(doc.data());
+            });
+            return res.status(200).json({
+              restRes: result
+            })
           })
-        }
-          snapshot.forEach(doc => {
-            console.log(doc.id, '=>', doc.data());
-            result.push(doc.data());
+          .catch(err => {
+            let errmsg = 'Error getting documents' + err;
+            return rest.status(420).json=({
+              error: errmsg
+            })
           });
-          return res.status(200).json({
-            restRes: result
+      }
+      if(getUser !== undefined && getMood === undefined) {
+        let result = [];
+        
+        let users = query.where('userID', '==', getUser).get().then(snapshot => {
+          if (snapshot.empty) {
+            return res.status(418).json({
+              error: 'No matching documents.'
+            })
+          }
+            snapshot.forEach(doc => {
+              console.log(doc.id, '=>', doc.data());
+              result.push(doc.data());
+            });
+            return res.status(200).json({
+              restRes: result
+            })
           })
-        })
-        .catch(err => {
-          let errmsg = 'Error getting documents' + err;
-          return rest.status(420).json=({
-            error: errmsg
-          })
-        });
+          .catch(err => {
+            let errmsg = 'Error getting documents' + err;
+            return rest.status(420).json=({
+              error: errmsg
+            })
+          });
+      }
+      
     
 
         // return res.status(200).json({
