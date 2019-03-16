@@ -60,9 +60,9 @@ exports.jsonMessage = functions.https.onRequest((req, res) => {
   });
 
   exports.registerMood = functions.https.onRequest((req, res) => {
-    const getMood = req.query.mood;
-    const getUser = req.query.user;
-    const getComment = req.body;
+    // const getMood = req.query.mood;
+    // const getUser = req.query.user;
+    const getData = req.body;
     // cors wrapper for cross platform(app) access
     cors(req, res,() => {
       if (req.method !== "POST") {
@@ -71,24 +71,18 @@ exports.jsonMessage = functions.https.onRequest((req, res) => {
           });
       }
       
-      let data = {
-        user: getUser,
-        mood: getMood
-      };
+      // let data = {
+      //   user: getUser,
+      //   mood: getMood,
+      //   time: getTime
+      // };
       
-      let collection = "torCollection"
-      let setDoc = db.collection(collection).doc(getUser).set(data);
-
-      const query  = db.collection(collection).where('user', '=', getUser);
-
-      let result;
-        query.onSnapshot(products => {
-
-          products.forEach(doc => {
-              result = doc.data();
-          })
-
-        });
+      let collection = "Mood"
+      // let setDoc = db.collection(collection).doc(getUser).set(data);
+      // eslint-disable-next-line promise/always-return
+      let register = db.collection(collection).add(getData).then(ref => {
+        console.log('Added document with ID: ', ref.id);
+      });
 
       //console.log('Uppercasing', context.params.pushId, original);
       // You must return a Promise when performing asynchronous tasks inside a Functions such as
@@ -96,14 +90,49 @@ exports.jsonMessage = functions.https.onRequest((req, res) => {
       // Setting an "uppercase" sibling in the Realtime Database returns a Promise.
           return res.status(200).json({
         toCollection: collection,
-        toUser: getUser,
-        toMood: getMood,
-        queryRes: result,
-        comment: getComment
+        registeredData: getData
+        // toUser: getUser,
+        // toMood: getMood,
+        // queryRes: result,
+        // comment: getData
         
       });
     });
   });
+
+  // [START basic_wildcard]
+  // Listen for changes in all documents in the 'mood' collection
+  // Initiate spotify call from here
+    exports.registerMusic = functions.firestore
+    .document('Mood/{userID}')
+    .onCreate((snap, context) => {
+      // Get an object representing the document
+      // e.g. {'name': 'Marie', 'age': 66}
+      let newValue = snap.data();
+
+      // access a particular field as you would any JS property
+      let userID = newValue.userID;
+      let spotifyID = "";
+      let query  = db.collection("users").doc(userID)
+      
+      var getDoc = query.get()
+        .then(doc => {
+          if (!doc.exists) {
+            console.log('No such document!');
+            return "No such document!";
+          } else {
+            console.log('Document data:', doc.data());
+            spotifyID = doc.spotifyID;
+            return doc.data();
+          }
+        }).then(console.log("Spotify ID retrieved: " + spotifyID)) 
+        .catch(err => {
+          console.log('Error getting document', err);
+        });
+        
+  // [END basic_wildcard]
+    });
+  
   exports.getMusic = functions.https.onRequest((req, res) => {
     cors(req, res,() => {
 
