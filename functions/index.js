@@ -253,6 +253,9 @@ exports.getOneUser = functions.https.onRequest((req, res) => {
       .then(doc => {
         if (!doc.exists) {
           console.log("No such document!");
+          return res.status(404).json({message: "No data"});
+        } else if (result === !doc.exists) {
+          return res.status(404).json({message: "No data"});
         } else {
           console.log("Document data:", doc.data());
           result.push(doc.data());
