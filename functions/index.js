@@ -308,3 +308,77 @@ exports.getMood = functions.https.onRequest((req, res) => {
         })
   });
 });
+
+//Gnurt: 
+
+exports.getDailyMusic = functions.https.onRequest((req, res) => {
+  cors(req, res,() => {
+
+    const query = db.collection("DailyMusic");
+
+   
+   // const getSong = req.query.Song;
+   // const getArtist = req.query.Artist;
+    const getDateListened = req.query.DateListened;
+    const getUser = req.query.UserID;
+
+    if(getUser !== undefined && getDateListened !== undefined) {
+      let result = [];
+      let users = query.where('UserID', '==', getUser).where('DateListened', '==', getDateListened).get().then(snapshot => {
+        if (snapshot.empty) {
+          return res.status(413).json({
+            error: "No matching documents"
+          })
+        }
+          snapshot.forEach(doc => {
+            console.log("Song found");
+            result.push(doc.data());
+          });
+          return res.status(200).json({
+            Songsfordate: result
+          })
+      })
+      .catch(err=> {
+        let errmsg = "error getting docs" + err;
+        return rest.status(416).json({
+          error:errmsg
+        })
+      });
+    }
+    if (getUser !== undefined && getDateListened === undefined) {
+      let result = [];
+
+      let users = query.where("UserID", "==", getUser).get().then(snapshot => {
+        if (snapshot.emtpy) {
+          return res.status(404).json({
+            error: "No match."
+          });
+        }
+        snapshot.forEach(doc => {
+          console.log("Song found");
+          result.push(doc.data());
+        });
+        return res.status(200).json({
+          Songs: result
+        })
+      })
+      .catch(err => {
+        let errmsg = "Error getting documents" + err;
+        return rest.status(418).json({
+          error: errmsg
+        })
+      });
+    }
+  });
+});
+
+exports.sendText = functions.https.onRequest((req, res) => {
+  if (req.method !== 'POST') {
+    return res.status(500).json({
+      message: "Not allowed, only POST requests is allowed"
+    });
+  }
+  res.status(200).json({
+    message: "Euraka!"
+  });
+});
