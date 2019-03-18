@@ -2,6 +2,7 @@
 // The Cloud Functions for Firebase SDK to create Cloud Functions and setup triggers.
 const functions = require("firebase-functions");
 const cors = require("cors")({ origin: true });
+const moment = require('moment');
 
 // The Firebase Admin SDK to access the Firebase Realtime Database.
 const admin = require("firebase-admin");
@@ -387,7 +388,7 @@ var getDoc = cityRef.get()
     } else {
       console.log('Document data:', doc.data());
       time = doc.get('timestamp');
-      console.log(time.toDate();
+      console.log(time.toDate());
       return res.status(418).json({
         data: doc.data()
       });
@@ -396,4 +397,6 @@ var getDoc = cityRef.get()
   .catch(err => {
     console.log('Error getting document', err);
   });
+  let timetramp = moment("2017-09-15 00:00:00.000").unix();
+  var addTime = db.collection(collection).add({timestamp: timetramp});
   });
