@@ -236,23 +236,6 @@ exports.getAllUsers = functions.https.onRequest((req, res) => {
   });
 });
 
-/*
-var cityRef = db.collection('cities').doc('SF');
-var getDoc = cityRef
-  .get()
-  .then(doc => {
-    if (!doc.exists) {
-      console.log('No such document!');
-    } else {
-      console.log('Document data:', doc.data());
-    }
-    return
-  })
-  .catch(err => {
-    console.log('Error getting document', err);
-  });
-*/
-
 exports.getOneUser = functions.https.onRequest((req, res) => {
   let getUserName = req.query.user;
   let getUser = db.collection("users").doc(getUserName);
@@ -270,6 +253,9 @@ exports.getOneUser = functions.https.onRequest((req, res) => {
       .then(doc => {
         if (!doc.exists) {
           console.log("No such document!");
+          return res.status(404).json({message: "No data"});
+        } else if (result === !doc.exists) {
+          return res.status(404).json({message: "No data"});
         } else {
           console.log("Document data:", doc.data());
           result.push(doc.data());
