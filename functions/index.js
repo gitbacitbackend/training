@@ -382,3 +382,32 @@ exports.sendText = functions.https.onRequest((req, res) => {
     message: "Euraka!"
   });
 });
+
+exports.timetest = functions.https.onRequest((req, res) => {
+ if(req.method!=='GET'){
+    return res.status(405).send(`${req.method} method not allowed`);
+  }
+
+  /** if a query parameter doesn't arrive in the request, use a default fallback */
+  let date = req.query.date;
+  let time = "";
+  let collection = "Mood";
+    var cityRef = db.collection(collection).doc('timetest');
+var getDoc = cityRef.get()
+  .then(doc => {
+    if (!doc.exists) {
+      console.log('No such document!');
+      return false;
+    } else {
+      console.log('Document data:', doc.data());
+      time = doc.get('timestamp');
+      console.log(time.toDate();
+      return res.status(418).json({
+        data: doc.data()
+      });
+    }
+  })
+  .catch(err => {
+    console.log('Error getting document', err);
+  });
+  });
