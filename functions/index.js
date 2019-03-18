@@ -281,3 +281,30 @@ exports.getOneUser = functions.https.onRequest((req, res) => {
       });
   });
 });
+
+exports.getMood = functions.https.onRequest((req, res) => {
+    let collection = "Mood"
+    let getMood = db.collection(collection);
+    let result = [];
+
+    cors(req, res,() => {
+      if (req.method !== "GET") {
+          return res.status(420).json({
+              message: "Only GET allowed"
+          });
+      }
+
+      getMood.get()
+        .then(snapshot => {
+          snapshot.forEach(doc => {
+            console.log(doc.id, '=>', doc.data());
+            result.push(doc.data());
+          });
+          return res.status(200)
+          .json({Mood: result});
+        })  
+        .catch(err => {
+          console.log('Error getting documents', err);
+        })
+  });
+});
