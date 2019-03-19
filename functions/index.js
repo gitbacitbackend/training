@@ -368,3 +368,42 @@ exports.sendText = functions.https.onRequest((req, res) => {
     message: "Euraka!"
   });
 });
+
+//https://jsonplaceholder.typicode.com/users
+exports.setData = functions.https.onRequest((res, req) => {
+  let fetch = require("node-fetch")
+  //let data = require("./data.json");
+  let collectionKey = "users";
+
+  async function getData(){
+    let data = await fetch('https://jsonplaceholder.typicode.com/users');
+    let main = await data.json();
+    console.log(main);
+
+  if (main && (typeof main === "object")){
+    Object.keys(main).forEach(docKey => {
+      db
+      .collection(collectionKey)
+      .doc(docKey)
+      .set(main[docKey])
+      .then((res) => {
+        console.log("Document " + docKey + "written");
+        if (req.method !== 'POST') {
+          return res.status(500).json({
+            message: "Not allowed, only POST requests is allowed"
+          });
+        }
+        /*return res.status(200).json({
+          users: main
+        });*/
+      })
+      .catch((error) => {
+        console.log("Error writing: ", error);
+      });
+    });
+  }
+}
+getData();
+})
+  
+
