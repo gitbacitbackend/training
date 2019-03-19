@@ -2,6 +2,7 @@
 // The Cloud Functions for Firebase SDK to create Cloud Functions and setup triggers.
 const functions = require("firebase-functions");
 const cors = require("cors")({ origin: true });
+const moment = require('moment');
 
 // The Firebase Admin SDK to access the Firebase Realtime Database.
 const admin = require("firebase-admin");
@@ -369,41 +370,33 @@ exports.sendText = functions.https.onRequest((req, res) => {
   });
 });
 
-//https://jsonplaceholder.typicode.com/users
-exports.setData = functions.https.onRequest((res, req) => {
-  let fetch = require("node-fetch")
-  //let data = require("./data.json");
-  let collectionKey = "users";
-
-  async function getData(){
-    let data = await fetch('https://jsonplaceholder.typicode.com/users');
-    let main = await data.json();
-    console.log(main);
-
-  if (main && (typeof main === "object")){
-    Object.keys(main).forEach(docKey => {
-      db
-      .collection(collectionKey)
-      .doc(docKey)
-      .set(main[docKey])
-      .then((res) => {
-        console.log("Document " + docKey + "written");
-        if (req.method !== 'POST') {
-          return res.status(500).json({
-            message: "Not allowed, only POST requests is allowed"
-          });
-        }
-        /*return res.status(200).json({
-          users: main
-        });*/
-      })
-      .catch((error) => {
-        console.log("Error writing: ", error);
-      });
-    });
+exports.timetest = functions.https.onRequest((req, res) => {
+ if(req.method!=='GET'){
+    return res.status(405).send(`${req.method} method not allowed`);
   }
-}
-getData();
-})
-  
 
+  /** if a query parameter doesn't arrive in the request, use a default fallback */
+  let date = req.query.date;
+  let time = "";
+  let collection = "Mood";
+    var cityRef = db.collection(collection).doc('timetest');
+var getDoc = cityRef.get()
+  .then(doc => {
+    if (!doc.exists) {
+      console.log('No such document!');
+      return false;
+    } else {
+      console.log('Document data:', doc.data());
+      time = doc.get('timestamp');
+      console.log(time.toDate());
+      return res.status(418).json({
+        data: doc.data()
+      });
+    }
+  })
+  .catch(err => {
+    console.log('Error getting document', err);
+  });
+  let timetramp = moment("2017-09-15 00:00:00.000").unix();
+  var addTime = db.collection(collection).add({timestamp: timetramp});
+  });
