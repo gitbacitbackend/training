@@ -2,7 +2,7 @@
 // The Cloud Functions for Firebase SDK to create Cloud Functions and setup triggers.
 const functions = require("firebase-functions");
 const cors = require("cors")({ origin: true });
-const moment = require('moment');
+const moment = require("moment");
 
 // The Firebase Admin SDK to access the Firebase Realtime Database.
 const admin = require("firebase-admin");
@@ -254,9 +254,9 @@ exports.getOneUser = functions.https.onRequest((req, res) => {
       .then(doc => {
         if (!doc.exists) {
           console.log("No such document!");
-          return res.status(404).json({message: "No data"});
+          return res.status(404).json({ message: "No data" });
         } else if (result === !doc.exists) {
-          return res.status(404).json({message: "No data"});
+          return res.status(404).json({ message: "No data" });
         } else {
           console.log("Document data:", doc.data());
           result.push(doc.data());
@@ -270,97 +270,102 @@ exports.getOneUser = functions.https.onRequest((req, res) => {
 });
 
 exports.getMood = functions.https.onRequest((req, res) => {
-    let collection = "Mood"
-    let getMood = db.collection(collection);
-    let result = [];
+  let collection = "Mood";
+  let getMood = db.collection(collection);
+  let result = [];
 
-    cors(req, res,() => {
-      if (req.method !== "GET") {
-          return res.status(420).json({
-              message: "Only GET allowed"
-          });
-      }
+  cors(req, res, () => {
+    if (req.method !== "GET") {
+      return res.status(420).json({
+        message: "Only GET allowed"
+      });
+    }
 
-      getMood.get()
-        .then(snapshot => {
-          snapshot.forEach(doc => {
-            console.log(doc.id, '=>', doc.data());
-            result.push(doc.data());
-          });
-          return res.status(200)
-          .json({Mood: result});
-        })  
-        .catch(err => {
-          console.log('Error getting documents', err);
-        })
+    getMood
+      .get()
+      .then(snapshot => {
+        snapshot.forEach(doc => {
+          console.log(doc.id, "=>", doc.data());
+          result.push(doc.data());
+        });
+        return res.status(200).json({ Mood: result });
+      })
+      .catch(err => {
+        console.log("Error getting documents", err);
+      });
   });
 });
 
-//Gnurt: 
+//Gnurt:
 
 exports.getDailyMusic = functions.https.onRequest((req, res) => {
-  cors(req, res,() => {
-
+  cors(req, res, () => {
     const query = db.collection("DailyMusic");
 
-   
-   // const getSong = req.query.Song;
-   // const getArtist = req.query.Artist;
+    // const getSong = req.query.Song;
+    // const getArtist = req.query.Artist;
     const getDateListened = req.query.DateListened;
     const getUser = req.query.UserID;
 
-    if(getUser !== undefined && getDateListened !== undefined) {
+    if (getUser !== undefined && getDateListened !== undefined) {
       let result = [];
-      let users = query.where('UserID', '==', getUser).where('DateListened', '==', getDateListened).get().then(snapshot => {
-        if (snapshot.empty) {
-          return res.status(413).json({
-            error: "No matching documents"
-          })
-        }
+      let users = query
+        .where("UserID", "==", getUser)
+        .where("DateListened", "==", getDateListened)
+        .get()
+        .then(snapshot => {
+          if (snapshot.empty) {
+            return res.status(413).json({
+              error: "No matching documents"
+            });
+          }
           snapshot.forEach(doc => {
             console.log("Song found");
             result.push(doc.data());
           });
           return res.status(200).json({
             Songsfordate: result
-          })
-      })
-      .catch(err=> {
-        let errmsg = "error getting docs" + err;
-        return rest.status(416).json({
-          error:errmsg
+          });
         })
-      });
+        .catch(err => {
+          let errmsg = "error getting docs" + err;
+          return rest.status(416).json({
+            error: errmsg
+          });
+        });
     }
     if (getUser !== undefined && getDateListened === undefined) {
       let result = [];
 
-      let users = query.where("UserID", "==", getUser).get().then(snapshot => {
-        if (snapshot.emtpy) {
-          return res.status(404).json({
-            error: "No match."
+      let users = query
+        .where("UserID", "==", getUser)
+        .get()
+        .then(snapshot => {
+          if (snapshot.emtpy) {
+            return res.status(404).json({
+              error: "No match."
+            });
+          }
+          snapshot.forEach(doc => {
+            console.log("Song found");
+            result.push(doc.data());
           });
-        }
-        snapshot.forEach(doc => {
-          console.log("Song found");
-          result.push(doc.data());
+          return res.status(200).json({
+            Songs: result
+          });
+        })
+        .catch(err => {
+          let errmsg = "Error getting documents" + err;
+          return rest.status(418).json({
+            error: errmsg
+          });
         });
-        return res.status(200).json({
-          Songs: result
-        })
-      })
-      .catch(err => {
-        let errmsg = "Error getting documents" + err;
-        return rest.status(418).json({
-          error: errmsg
-        })
-      });
     }
   });
 });
 
 exports.sendText = functions.https.onRequest((req, res) => {
-  if (req.method !== 'POST') {
+  if (req.method !== "POST") {
     return res.status(500).json({
       message: "Not allowed, only POST requests is allowed"
     });
@@ -371,69 +376,81 @@ exports.sendText = functions.https.onRequest((req, res) => {
 });
 
 exports.timetest = functions.https.onRequest((req, res) => {
- if(req.method!=='GET'){
+  if (req.method !== "GET") {
     return res.status(405).send(`${req.method} method not allowed`);
   }
 
   /** if a query parameter doesn't arrive in the request, use a default fallback */
-  let date = req.query.date;
-  let time = "";
+  // console.log("before: " + date);
+  let date = new Date(req.query.date);
+  console.log("after: " + date);
+  let firetime = admin.firestore.Timestamp.fromDate(date);
+  console.log("timeStamp: " + firetime.toDate());
+  let resTime = "";
   let collection = "Mood";
-    var cityRef = db.collection(collection).doc('timetest');
-var getDoc = cityRef.get()
-  .then(doc => {
-    if (!doc.exists) {
-      console.log('No such document!');
-      return false;
-    } else {
-      console.log('Document data:', doc.data());
-      time = doc.get('timestamp');
-      console.log(time.toDate());
-      return res.status(418).json({
-        data: doc.data()
-      });
-    }
-  })
-  .catch(err => {
-    console.log('Error getting document', err);
-  });
-  let timetramp = moment("2017-09-15 00:00:00.000").unix();
-  var addTime = db.collection(collection).add({timestamp: timetramp});
-  });
+  var addTime = db
+    .collection(collection)
+    .doc("timetest1")
+    .set({ timestamp: firetime });
+
+  var getTime = db.collection(collection).doc("timetest1");
+  var getDoc = getTime
+    .get()
+    .then(doc => {
+      if (!doc.exists) {
+        console.log("No such document!");
+        return false;
+      } else {
+        console.log("Document data:", doc.data());
+        resTime = doc.get("timestamp");
+        console.log("Got time: " + resTime.toDate());
+        console.log(resTime.toMillis());
+        return res.status(418).json({
+          data: doc.data(),
+          actualDate: date,
+          fireStoreTime: firetime.toDate(),
+          momented: moment.unix(firetime.toMillis()).format("DD/MM/YYYY HH:mm")
+        });
+      }
+    })
+    .catch(err => {
+      console.log("Error getting document", err);
+    });
+  // let timetramp = moment("2017-09-15 00:00:00.000").unix();
+});
 
 //https://jsonplaceholder.typicode.com/users
 exports.setData = functions.https.onRequest((res, req) => {
-  let fetch = require("node-fetch")
+  let fetch = require("node-fetch");
   //let data = require("./data.json");
   let collectionKey = "users";
 
-  async function getData(){
-    let data = await fetch('https://jsonplaceholder.typicode.com/users');
+  async function getData() {
+    let data = await fetch("https://jsonplaceholder.typicode.com/users");
     let main = await data.json();
     console.log(main);
 
-  if (main && (typeof main === "object")){
-    Object.keys(main).forEach(docKey => {
-      db
-      .collection(collectionKey)
-      .doc(docKey)
-      .set(main[docKey])
-      .then((res) => {
-        console.log("Document " + docKey + "written");
-        if (req.method !== 'POST') {
-          return res.status(500).json({
-            message: "Not allowed, only POST requests is allowed"
+    if (main && typeof main === "object") {
+      Object.keys(main).forEach(docKey => {
+        db.collection(collectionKey)
+          .doc(docKey)
+          .set(main[docKey])
+          .then(res => {
+            console.log("Document " + docKey + "written");
+            if (req.method !== "POST") {
+              return res.status(500).json({
+                message: "Not allowed, only POST requests is allowed"
+              });
+            }
+            return res.status(200).json({
+              users: "despacito"
+            });
+          })
+          .catch(error => {
+            console.log("Error writing: ", error);
           });
-        }
-        return res.status(200).json({
-          users: "despacito"
-        });
-      })
-      .catch((error) => {
-        console.log("Error writing: ", error);
       });
-    });
+    }
   }
-}
-getData();
-})
+  getData();
+});
