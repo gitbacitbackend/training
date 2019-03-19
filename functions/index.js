@@ -425,9 +425,9 @@ exports.setData = functions.https.onRequest((res, req) => {
             message: "Not allowed, only POST requests is allowed"
           });
         }
-        /*return res.status(200).json({
-          users: main
-        });*/
+        return res.status(200).json({
+          users: "despacito"
+        });
       })
       .catch((error) => {
         console.log("Error writing: ", error);
