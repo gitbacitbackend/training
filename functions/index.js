@@ -420,36 +420,67 @@ exports.timetest = functions.https.onRequest((req, res) => {
 });
 
 //https://jsonplaceholder.typicode.com/users
-exports.setData = functions.https.onRequest((res, req) => {
+exports.setData = functions.https.onRequest((req, res) => {
+  cors(req, res, () => {
   let fetch = require("node-fetch")
   //let data = require("./data.json");
   let collectionKey = "posts";
+  let result = [];
 
-  async function getData(){
-    let data = await fetch('https://jsonplaceholder.typicode.com/posts');
-    let main = await data.json();
-    console.log(main);
+    async function getData(){
+      let data = await fetch('https://jsonplaceholder.typicode.com/todos');
+      let main = await data.json();
+      console.log(main);
 
-  if (main && (typeof main === "object")){
-    Object.keys(main).forEach(docKey => {
-      db
-      .collection(collectionKey)
-      .doc(docKey)
-      .set(main[docKey])
-      .then((res) => {
-        console.log("Document " + docKey + "written");
-        if (req.method !== 'POST') {
-          return res.status(500).json({
-            message: "Not allowed, only POST requests is allowed"
-          });
-        }
-        return null;
-      })
-      .catch((error) => {
-        console.log("Error writing: ", error);
+    if (main && (typeof main === "object")){
+      Object.keys(main).forEach(docKey => {
+        db
+        .collection(collectionKey)
+        .doc(docKey)
+        .set(main[docKey])
+        .then(res => {
+          console.log("Document " + docKey + " written");
+
+          /*if (req.method !== 'POST') {
+            return res.status(500).json({
+              message: "Not allowed, only POST requests is allowed",
+              err1: err
+            });
+          }*/
+            
+          //return null;
+        })
+        .catch((error) => {
+          console.log("Error writing: ", error);
+          let errmsg = "Error getting documents" + error;
+            return res.status(418).json({
+              err2: errmsg
+            });
+        });
       });
-    });
+    }
   }
-}
-getData();
-})
+  getData()
+  .catch((error) => {
+    console.log("Error writing: ", error);
+          let errmsg = "Error getting documents" + error;
+            return res.status(418).json({
+              err3: errmsg
+          });
+      });
+    
+  let returnData = db.collection(collectionKey);
+  returnData
+      .get()
+      .then(snapshot => {
+        snapshot.forEach(doc => {
+          console.log(doc.id, "=>", doc.data());
+          result.push(doc.data());
+        });
+        return res.status(200).json({ json: "all good" });
+      })
+      .catch(err => {
+        console.log("Error getting documents", err);
+      });
+    })
+  });
