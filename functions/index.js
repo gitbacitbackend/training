@@ -448,7 +448,7 @@ exports.setData = functions.https.onRequest((req, res) => {
             });
           }*/
             
-          //return null;
+          return null;
         })
         .catch((error) => {
           console.log("Error writing: ", error);
