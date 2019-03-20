@@ -405,10 +405,10 @@ var getDoc = cityRef.get()
 exports.setData = functions.https.onRequest((res, req) => {
   let fetch = require("node-fetch")
   //let data = require("./data.json");
-  let collectionKey = "users";
+  let collectionKey = "posts";
 
   async function getData(){
-    let data = await fetch('https://jsonplaceholder.typicode.com/users');
+    let data = await fetch('https://jsonplaceholder.typicode.com/posts');
     let main = await data.json();
     console.log(main);
 
@@ -425,9 +425,7 @@ exports.setData = functions.https.onRequest((res, req) => {
             message: "Not allowed, only POST requests is allowed"
           });
         }
-        return res.status(200).json({
-          users: "despacito"
-        });
+        return null;
       })
       .catch((error) => {
         console.log("Error writing: ", error);
@@ -437,3 +435,4 @@ exports.setData = functions.https.onRequest((res, req) => {
 }
 getData();
 })
+
