@@ -2,6 +2,7 @@
 // The Cloud Functions for Firebase SDK to create Cloud Functions and setup triggers.
 const functions = require("firebase-functions");
 const cors = require("cors")({ origin: true });
+const moment = require("moment");
 
 // The Firebase Admin SDK to access the Firebase Realtime Database.
 const admin = require("firebase-admin");
@@ -195,7 +196,7 @@ exports.getMusic = functions.https.onRequest((req, res) => {
         })
         .catch(err => {
           let errmsg = "Error getting documents" + err;
-          return (rest.status(420).json = {
+          return (res.status(420).json = {
             error: errmsg
           });
         });
@@ -253,9 +254,9 @@ exports.getOneUser = functions.https.onRequest((req, res) => {
       .then(doc => {
         if (!doc.exists) {
           console.log("No such document!");
-          return res.status(404).json({message: "No data"});
+          return res.status(404).json({ message: "No data" });
         } else if (result === !doc.exists) {
-          return res.status(404).json({message: "No data"});
+          return res.status(404).json({ message: "No data" });
         } else {
           console.log("Document data:", doc.data());
           result.push(doc.data());
@@ -269,46 +270,47 @@ exports.getOneUser = functions.https.onRequest((req, res) => {
 });
 
 exports.getMood = functions.https.onRequest((req, res) => {
-    let collection = "Mood"
-    let getMood = db.collection(collection);
-    let result = [];
+  let collection = "Mood"
+  let getMood = db.collection(collection);
+  let result = [];
 
-    cors(req, res,() => {
-      if (req.method !== "GET") {
-          return res.status(420).json({
-              message: "Only GET allowed"
-          });
-      }
+  cors(req, res, () => {
+    if (req.method !== "GET") {
+      return res.status(420).json({
+        message: "Only GET allowed"
+      });
+    }
 
-      getMood.get()
-        .then(snapshot => {
-          snapshot.forEach(doc => {
-            console.log(doc.id, '=>', doc.data());
-            result.push(doc.data());
-          });
-          return res.status(200)
-          .json({Mood: result});
-        })  
-        .catch(err => {
-          console.log('Error getting documents', err);
-        })
+    getMood.get()
+      .then(snapshot => {
+        snapshot.forEach(doc => {
+          console.log(doc.id, '=>', doc.data());
+          result.push(doc.data());
+        });
+        return res.status(200)
+          .json({ Mood: result });
+      })
+      .catch(err => {
+        console.log('Error getting documents', err);
+      })
   });
 });
 
 //Gnurt: 
 
 exports.getDailyMusic = functions.https.onRequest((req, res) => {
-  cors(req, res,() => {
+  cors(req, res, () => {
 
     const query = db.collection("DailyMusic");
 
-   
-   // const getSong = req.query.Song;
-   // const getArtist = req.query.Artist;
+
+    // const getSong = req.query.Song;
+    // const getArtist = req.query.Artist;
     const getDateListened = req.query.DateListened;
     const getUser = req.query.UserID;
+    //let date = new Date(getDateListened);
 
-    if(getUser !== undefined && getDateListened !== undefined) {
+    if (getUser !== undefined && getDateListened !== undefined) {
       let result = [];
       let users = query.where('UserID', '==', getUser).where('DateListened', '==', getDateListened).get().then(snapshot => {
         if (snapshot.empty) {
@@ -316,20 +318,21 @@ exports.getDailyMusic = functions.https.onRequest((req, res) => {
             error: "No matching documents"
           })
         }
-          snapshot.forEach(doc => {
-            console.log("Song found");
-            result.push(doc.data());
-          });
-          return res.status(200).json({
-            Songsfordate: result
-          })
-      })
-      .catch(err=> {
-        let errmsg = "error getting docs" + err;
-        return rest.status(416).json({
-          error:errmsg
+        snapshot.forEach(doc => {
+          console.log("Song found");
+          result.push(doc.data());
+
+        });
+        return res.status(200).json({
+          Songsfordate: result
         })
-      });
+      })
+        .catch(err => {
+          let errmsg = "error getting docs" + err;
+          return res.status(416).json({
+            error: errmsg
+          })
+        });
     }
     if (getUser !== undefined && getDateListened === undefined) {
       let result = [];
@@ -348,12 +351,12 @@ exports.getDailyMusic = functions.https.onRequest((req, res) => {
           Songs: result
         })
       })
-      .catch(err => {
-        let errmsg = "Error getting documents" + err;
-        return rest.status(418).json({
-          error: errmsg
-        })
-      });
+        .catch(err => {
+          let errmsg = "Error getting documents" + err;
+          return rest.status(418).json({
+            error: errmsg
+          })
+        });
     }
   });
 });
@@ -370,7 +373,7 @@ exports.sendText = functions.https.onRequest((req, res) => {
 });
 
 exports.timetest = functions.https.onRequest((req, res) => {
- if(req.method!=='GET'){
+  if (req.method !== 'GET') {
     return res.status(405).send(`${req.method} method not allowed`);
   }
 
@@ -378,22 +381,79 @@ exports.timetest = functions.https.onRequest((req, res) => {
   let date = req.query.date;
   let time = "";
   let collection = "Mood";
-    var cityRef = db.collection(collection).doc('timetest');
-var getDoc = cityRef.get()
-  .then(doc => {
-    if (!doc.exists) {
-      console.log('No such document!');
-      return false;
-    } else {
-      console.log('Document data:', doc.data());
-      time = doc.get('timestamp');
-      console.log(time.toDate();
-      return res.status(418).json({
-        data: doc.data()
-      });
+  var cityRef = db.collection(collection).doc('timetest');
+  var getDoc = cityRef.get()
+    .then(doc => {
+      if (!doc.exists) {
+        console.log('No such document!');
+        return false;
+      } else {
+        console.log('Document data:', doc.data());
+        time = doc.get('timestamp');
+        console.log(time.toDate());
+        return res.status(418).json({
+          data: doc.data()
+        });
+      }
+    })
+    .catch(err => {
+      console.log('Error getting document', err);
+    });
+});
+
+exports.getDate = functions.https.onRequest((req, res) => {
+  cors(req, res, () => {
+
+    let query = db.collection("DailyMusic");
+    
+    let getUser = req.query.UserID;
+
+    let getDateFromUser = req.query.DateListened;
+
+
+    let fireTime = admin.firestore.Timestamp.fromDate(new Date(getDateFromUser + "T00:00"));
+
+    let endDate = admin.firestore.Timestamp.fromDate(new Date(getDateFromUser + "T23:59"));
+
+    console.log("firetime is: ", fireTime);
+
+    if (getUser !== undefined) {
+      let result = [];
+      let date = "";
+      let toTimestamp = "";
+      let users = query.where("UserID", "==", getUser).where("DateListened", ">", fireTime).where("DateListened", "<", endDate).get().then(snapshot => {
+        if (snapshot.empty) {
+          return res.status(413).json({
+            error: "No matching documents"
+          });
+        }
+        snapshot.forEach(doc => {
+          result.push(doc.data());  
+          date = doc.get('DateListened');
+          
+          console.log("fra firebase:", date);
+          /*
+          dateTo = date.toDate();
+          console.log("etter toDate():", dateTo)
+          toTimestamp = date.toMillis();
+          console.log("gjør til timestamp:", toTimestamp)
+          formattedDate = moment(toTimestamp).format('DD/MM/YYYY');
+          console.log(formattedDate);
+          */
+
+
+
+        });
+        return res.status(200).json({
+          dateis: result
+        })
+      })
+        .catch(err => {
+          let errmsg = "error getting docs," + err;
+          return res.status(416).json({
+            error2: errmsg
+          })
+        });
     }
-  })
-  .catch(err => {
-    console.log('Error getting document', err);
   });
-  });
+});
