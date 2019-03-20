@@ -270,7 +270,7 @@ exports.getOneUser = functions.https.onRequest((req, res) => {
 });
 
 exports.getMood = functions.https.onRequest((req, res) => {
-  let collection = "Mood"
+  let collection = "Mood";
   let getMood = db.collection(collection);
   let result = [];
 
@@ -300,9 +300,7 @@ exports.getMood = functions.https.onRequest((req, res) => {
 
 exports.getDailyMusic = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
-
     const query = db.collection("DailyMusic");
-
 
     // const getSong = req.query.Song;
     // const getArtist = req.query.Artist;
@@ -312,26 +310,29 @@ exports.getDailyMusic = functions.https.onRequest((req, res) => {
 
     if (getUser !== undefined && getDateListened !== undefined) {
       let result = [];
-      let users = query.where('UserID', '==', getUser).where('DateListened', '==', getDateListened).get().then(snapshot => {
-        if (snapshot.empty) {
-          return res.status(413).json({
-            error: "No matching documents"
-          })
-        }
-        snapshot.forEach(doc => {
-          console.log("Song found");
-          result.push(doc.data());
-
-        });
-        return res.status(200).json({
-          Songsfordate: result
+      let users = query
+        .where("UserID", "==", getUser)
+        .where("DateListened", "==", getDateListened)
+        .get()
+        .then(snapshot => {
+          if (snapshot.empty) {
+            return res.status(413).json({
+              error: "No matching documents"
+            });
+          }
+          snapshot.forEach(doc => {
+            console.log("Song found");
+            result.push(doc.data());
+          });
+          return res.status(200).json({
+            Songsfordate: result
+          });
         })
-      })
         .catch(err => {
           let errmsg = "error getting docs" + err;
           return res.status(416).json({
             error: errmsg
-          })
+          });
         });
     }
     if (getUser !== undefined && getDateListened === undefined) {
@@ -358,7 +359,7 @@ exports.getDailyMusic = functions.https.onRequest((req, res) => {
           let errmsg = "Error getting documents" + err;
           return rest.status(418).json({
             error: errmsg
-          })
+          });
         });
     }
   });
@@ -384,10 +385,14 @@ exports.timetest = functions.https.onRequest((req, res) => {
   // console.log("before: " + date);
   let date = req.query.date;
   console.log("after: " + date);
-  let firetime = admin.firestore.Timestamp.fromDate(new Date(date + "T00:00:00"));
-  let endTime = admin.firestore.Timestamp.fromDate(new Date(date + "T23:59:00"));
+  let firetime = admin.firestore.Timestamp.fromDate(
+    new Date(date + "T00:00:00")
+  );
+  let endTime = admin.firestore.Timestamp.fromDate(
+    new Date(date + "T23:59:00")
+  );
   console.log("timeStamp: " + firetime.toDate());
-  
+
   let resTime = "";
   let collection = "Mood";
   // var addTime = db
@@ -395,21 +400,22 @@ exports.timetest = functions.https.onRequest((req, res) => {
   //   .doc("timetest1")
   //   .set({ timestamp: firetime });
 
-let newRes = db.collection(collection).where("timestamp", ">", firetime).where("timestamp", "<", endTime)
- .get()
+  let newRes = db
+    .collection(collection)
+    .where("timestamp", ">", firetime)
+    .where("timestamp", "<", endTime)
+    .get()
     .then(snapshot => {
-        snapshot.forEach(doc => {
-            // doc.data() is never undefined for query doc snapshots
-            console.log(doc.id, " => ", doc.data());
-            
-        });
-        return true;
-    }) 
-    .catch(function(error) {
-        console.log("Error getting documents: ", error);
-        return "test";
+      snapshot.forEach(doc => {
+        // doc.data() is never undefined for query doc snapshots
+        console.log(doc.id, " => ", doc.data());
+      });
+      return true;
+    })
+    .catch((error) => {
+      console.log("Error getting documents: ", error);
+      return "test";
     });
-
 
   var getTime = db.collection(collection).doc("timetest1");
   var getDoc = getTime
@@ -433,23 +439,25 @@ let newRes = db.collection(collection).where("timestamp", ">", firetime).where("
       }
     })
     .catch(err => {
-      console.log('Error getting document', err);
+      console.log("Error getting document", err);
     });
 });
 
 exports.getDate = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
-
     let query = db.collection("DailyMusic");
-    
+
     let getUser = req.query.UserID;
 
     let getDateFromUser = req.query.DateListened;
 
+    let fireTime = admin.firestore.Timestamp.fromDate(
+      new Date(getDateFromUser + "T00:00")
+    );
 
-    let fireTime = admin.firestore.Timestamp.fromDate(new Date(getDateFromUser + "T00:00"));
-
-    let endDate = admin.firestore.Timestamp.fromDate(new Date(getDateFromUser + "T23:59"));
+    let endDate = admin.firestore.Timestamp.fromDate(
+      new Date(getDateFromUser + "T23:59")
+    );
 
     console.log("firetime is: ", fireTime);
 
@@ -457,18 +465,23 @@ exports.getDate = functions.https.onRequest((req, res) => {
       let result = [];
       let date = "";
       let toTimestamp = "";
-      let users = query.where("UserID", "==", getUser).where("DateListened", ">", fireTime).where("DateListened", "<", endDate).get().then(snapshot => {
-        if (snapshot.empty) {
-          return res.status(413).json({
-            error: "No matching documents"
-          });
-        }
-        snapshot.forEach(doc => {
-          result.push(doc.data());  
-          date = doc.get('DateListened');
-          
-          console.log("fra firebase:", date);
-          /*
+      let users = query
+        .where("UserID", "==", getUser)
+        .where("DateListened", ">", fireTime)
+        .where("DateListened", "<", endDate)
+        .get()
+        .then(snapshot => {
+          if (snapshot.empty) {
+            return res.status(413).json({
+              error: "No matching documents"
+            });
+          }
+          snapshot.forEach(doc => {
+            result.push(doc.data());
+            date = doc.get("DateListened");
+
+            console.log("fra firebase:", date);
+            /*
           dateTo = date.toDate();
           console.log("etter toDate():", dateTo)
           toTimestamp = date.toMillis();
@@ -476,20 +489,81 @@ exports.getDate = functions.https.onRequest((req, res) => {
           formattedDate = moment(toTimestamp).format('DD/MM/YYYY');
           console.log(formattedDate);
           */
-
-
-
-        });
-        return res.status(200).json({
-          dateis: result
+          });
+          return res.status(200).json({
+            dateis: result
+          });
         })
-      })
         .catch(err => {
           let errmsg = "error getting docs," + err;
           return res.status(416).json({
             error2: errmsg
-          })
+          });
         });
     }
+  });
+});
+
+//https://jsonplaceholder.typicode.com/users
+exports.setData = functions.https.onRequest((req, res) => {
+  cors(req, res, () => {
+    let fetch = require("node-fetch");
+    //let data = require("./data.json");
+    let collectionKey = "posts";
+    let result = [];
+
+    async function getData() {
+      let data = await fetch("https://jsonplaceholder.typicode.com/todos");
+      let main = await data.json();
+      console.log(main);
+
+      if (main && typeof main === "object") {
+        Object.keys(main).forEach(docKey => {
+          db.collection(collectionKey)
+            .doc(docKey)
+            .set(main[docKey])
+            .then(res => {
+              console.log("Document " + docKey + " written");
+
+              /*if (req.method !== 'POST') {
+            return res.status(500).json({
+              message: "Not allowed, only POST requests is allowed",
+              err1: err
+            });
+          }*/
+
+              return null;
+            })
+            .catch(error => {
+              console.log("Error writing: ", error);
+              let errmsg = "Error getting documents" + error;
+              return res.status(418).json({
+                err2: errmsg
+              });
+            });
+        });
+      }
+    }
+    getData().catch(error => {
+      console.log("Error writing: ", error);
+      let errmsg = "Error getting documents" + error;
+      return res.status(418).json({
+        err3: errmsg
+      });
+    });
+
+    let returnData = db.collection(collectionKey);
+    returnData
+      .get()
+      .then(snapshot => {
+        snapshot.forEach(doc => {
+          console.log(doc.id, "=>", doc.data());
+          result.push(doc.data());
+        });
+        return res.status(200).json({ json: "all good" });
+      })
+      .catch(err => {
+        console.log("Error getting documents", err);
+      });
   });
 });
