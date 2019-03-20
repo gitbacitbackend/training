@@ -270,7 +270,11 @@ exports.getOneUser = functions.https.onRequest((req, res) => {
 });
 
 exports.getMood = functions.https.onRequest((req, res) => {
+<<<<<<< HEAD
   let collection = "Mood"
+=======
+  let collection = "Mood";
+>>>>>>> 1e88e6ae908e186a2dcd767b98142d642900d843
   let getMood = db.collection(collection);
   let result = [];
 
@@ -281,6 +285,7 @@ exports.getMood = functions.https.onRequest((req, res) => {
       });
     }
 
+<<<<<<< HEAD
     getMood.get()
       .then(snapshot => {
         snapshot.forEach(doc => {
@@ -293,17 +298,36 @@ exports.getMood = functions.https.onRequest((req, res) => {
       .catch(err => {
         console.log('Error getting documents', err);
       })
+=======
+    getMood
+      .get()
+      .then(snapshot => {
+        snapshot.forEach(doc => {
+          console.log(doc.id, "=>", doc.data());
+          result.push(doc.data());
+        });
+        return res.status(200).json({ Mood: result });
+      })
+      .catch(err => {
+        console.log("Error getting documents", err);
+      });
+>>>>>>> 1e88e6ae908e186a2dcd767b98142d642900d843
   });
 });
 
-//Gnurt: 
+//Gnurt:
 
 exports.getDailyMusic = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
+<<<<<<< HEAD
 
     const query = db.collection("DailyMusic");
 
 
+=======
+    const query = db.collection("DailyMusic");
+
+>>>>>>> 1e88e6ae908e186a2dcd767b98142d642900d843
     // const getSong = req.query.Song;
     // const getArtist = req.query.Artist;
     const getDateListened = req.query.DateListened;
@@ -312,6 +336,7 @@ exports.getDailyMusic = functions.https.onRequest((req, res) => {
 
     if (getUser !== undefined && getDateListened !== undefined) {
       let result = [];
+<<<<<<< HEAD
       let users = query.where('UserID', '==', getUser).where('DateListened', '==', getDateListened).get().then(snapshot => {
         if (snapshot.empty) {
           return res.status(413).json({
@@ -332,16 +357,53 @@ exports.getDailyMusic = functions.https.onRequest((req, res) => {
           return res.status(416).json({
             error: errmsg
           })
+=======
+      let users = query
+        .where("UserID", "==", getUser)
+        .where("DateListened", "==", getDateListened)
+        .get()
+        .then(snapshot => {
+          if (snapshot.empty) {
+            return res.status(413).json({
+              error: "No matching documents"
+            });
+          }
+          snapshot.forEach(doc => {
+            console.log("Song found");
+            result.push(doc.data());
+          });
+          return res.status(200).json({
+            Songsfordate: result
+          });
+        })
+        .catch(err => {
+          let errmsg = "error getting docs" + err;
+          return rest.status(416).json({
+            error: errmsg
+          });
+>>>>>>> 1e88e6ae908e186a2dcd767b98142d642900d843
         });
     }
     if (getUser !== undefined && getDateListened === undefined) {
       let result = [];
 
-      let users = query.where("UserID", "==", getUser).get().then(snapshot => {
-        if (snapshot.emtpy) {
-          return res.status(404).json({
-            error: "No match."
+      let users = query
+        .where("UserID", "==", getUser)
+        .get()
+        .then(snapshot => {
+          if (snapshot.emtpy) {
+            return res.status(404).json({
+              error: "No match."
+            });
+          }
+          snapshot.forEach(doc => {
+            console.log("Song found");
+            result.push(doc.data());
           });
+          return res.status(200).json({
+            Songs: result
+          });
+<<<<<<< HEAD
         }
         snapshot.forEach(doc => {
           console.log("Song found");
@@ -351,18 +413,25 @@ exports.getDailyMusic = functions.https.onRequest((req, res) => {
           Songs: result
         })
       })
+=======
+        })
+>>>>>>> 1e88e6ae908e186a2dcd767b98142d642900d843
         .catch(err => {
           let errmsg = "Error getting documents" + err;
           return rest.status(418).json({
             error: errmsg
+<<<<<<< HEAD
           })
+=======
+          });
+>>>>>>> 1e88e6ae908e186a2dcd767b98142d642900d843
         });
     }
   });
 });
 
 exports.sendText = functions.https.onRequest((req, res) => {
-  if (req.method !== 'POST') {
+  if (req.method !== "POST") {
     return res.status(500).json({
       message: "Not allowed, only POST requests is allowed"
     });
@@ -373,14 +442,25 @@ exports.sendText = functions.https.onRequest((req, res) => {
 });
 
 exports.timetest = functions.https.onRequest((req, res) => {
+<<<<<<< HEAD
   if (req.method !== 'GET') {
+=======
+  if (req.method !== "GET") {
+>>>>>>> 1e88e6ae908e186a2dcd767b98142d642900d843
     return res.status(405).send(`${req.method} method not allowed`);
   }
 
   /** if a query parameter doesn't arrive in the request, use a default fallback */
+  // console.log("before: " + date);
   let date = req.query.date;
-  let time = "";
+  console.log("after: " + date);
+  let firetime = admin.firestore.Timestamp.fromDate(new Date(date + "T00:00:00"));
+  let endTime = admin.firestore.Timestamp.fromDate(new Date(date + "T23:59:00"));
+  console.log("timeStamp: " + firetime.toDate());
+  
+  let resTime = "";
   let collection = "Mood";
+<<<<<<< HEAD
   var cityRef = db.collection(collection).doc('timetest');
   var getDoc = cityRef.get()
     .then(doc => {
@@ -393,10 +473,52 @@ exports.timetest = functions.https.onRequest((req, res) => {
         console.log(time.toDate());
         return res.status(418).json({
           data: doc.data()
+=======
+  // var addTime = db
+  //   .collection(collection)
+  //   .doc("timetest1")
+  //   .set({ timestamp: firetime });
+
+let newRes = db.collection(collection).where("timestamp", ">", firetime).where("timestamp", "<", endTime)
+ .get()
+    .then(snapshot => {
+        snapshot.forEach(doc => {
+            // doc.data() is never undefined for query doc snapshots
+            console.log(doc.id, " => ", doc.data());
+            
+        });
+        return true;
+    }) 
+    .catch(function(error) {
+        console.log("Error getting documents: ", error);
+        return "test";
+    });
+
+
+  var getTime = db.collection(collection).doc("timetest1");
+  var getDoc = getTime
+    .get()
+    .then(doc => {
+      if (!doc.exists) {
+        console.log("No such document!");
+        return false;
+      } else {
+        // console.log("Document data:", doc.data());
+        resTime = doc.get("timestamp");
+        // console.log("Got time: " + resTime.toDate());
+        // console.log(resTime.toMillis());
+        return res.status(418).json({
+          data: doc.data(),
+          actualDate: date,
+          fireStoreTime: firetime.toDate(),
+          endTime: endTime.toDate()
+          // momented: moment.unix(firetime.toMillis()).format("DD/MM/YYYY HH:mm")
+>>>>>>> 1e88e6ae908e186a2dcd767b98142d642900d843
         });
       }
     })
     .catch(err => {
+<<<<<<< HEAD
       console.log('Error getting document', err);
     });
 });
@@ -455,5 +577,76 @@ exports.getDate = functions.https.onRequest((req, res) => {
           })
         });
     }
+=======
+      console.log("Error getting document", err);
+    });
+  // let timetramp = moment("2017-09-15 00:00:00.000").unix();
+});
+
+//https://jsonplaceholder.typicode.com/users
+exports.setData = functions.https.onRequest((req, res) => {
+  cors(req, res, () => {
+  let fetch = require("node-fetch")
+  //let data = require("./data.json");
+  let collectionKey = "posts";
+  let result = [];
+
+    async function getData(){
+      let data = await fetch('https://jsonplaceholder.typicode.com/todos');
+      let main = await data.json();
+      console.log(main);
+
+    if (main && (typeof main === "object")){
+      Object.keys(main).forEach(docKey => {
+        db
+        .collection(collectionKey)
+        .doc(docKey)
+        .set(main[docKey])
+        .then(res => {
+          console.log("Document " + docKey + " written");
+
+          /*if (req.method !== 'POST') {
+            return res.status(500).json({
+              message: "Not allowed, only POST requests is allowed",
+              err1: err
+            });
+          }*/
+            
+          return null;
+        })
+        .catch((error) => {
+          console.log("Error writing: ", error);
+          let errmsg = "Error getting documents" + error;
+            return res.status(418).json({
+              err2: errmsg
+            });
+        });
+      });
+    }
+  }
+  getData()
+  .catch((error) => {
+    console.log("Error writing: ", error);
+          let errmsg = "Error getting documents" + error;
+            return res.status(418).json({
+              err3: errmsg
+          });
+      });
+    
+  let returnData = db.collection(collectionKey);
+  returnData
+      .get()
+      .then(snapshot => {
+        snapshot.forEach(doc => {
+          console.log(doc.id, "=>", doc.data());
+          result.push(doc.data());
+        });
+        return res.status(200).json({ json: "all good" });
+      })
+      .catch(err => {
+        console.log("Error getting documents", err);
+      });
+    })
+>>>>>>> 1e88e6ae908e186a2dcd767b98142d642900d843
   });
 });
