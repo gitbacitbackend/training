@@ -10,6 +10,8 @@ admin.initializeApp(functions.config().firebase);
 
 var db = admin.firestore();
 
+const BEGINTIME = "T00:00:00";
+const ENDTIME = "T23:59:59";
 // Take the text parameter passed to this HTTP endpoint and insert it into the
 // Realtime Database under the path /messages/:pushId/original
 exports.addMessage = functions.https.onRequest((req, res) => {
@@ -384,14 +386,15 @@ exports.timetest = functions.https.onRequest((req, res) => {
   /** if a query parameter doesn't arrive in the request, use a default fallback */
   // console.log("before: " + date);
   let date = req.query.date;
-  console.log("after: " + date);
-  let firetime = admin.firestore.Timestamp.fromDate(
-    new Date(date + "T00:00:00")
+  let userID = req.query.user;
+  // console.log("after: " + date);
+  let beginTime = admin.firestore.Timestamp.fromDate(
+    timestampHandler(date, "BEGINTIME")
   );
   let endTime = admin.firestore.Timestamp.fromDate(
-    new Date(date + "T23:59:00")
+    timestampHandler(date, "ENDTIME")
   );
-  console.log("timeStamp: " + firetime.toDate());
+  console.log("timeStamp: " + beginTime.toDate());
 
   let resTime = "";
   let collection = "Mood";
@@ -402,17 +405,19 @@ exports.timetest = functions.https.onRequest((req, res) => {
 
   let newRes = db
     .collection(collection)
-    .where("timestamp", ">", firetime)
+    .where("timestamp", ">", beginTime)
     .where("timestamp", "<", endTime)
+    .where("userID", "==", userID)
     .get()
     .then(snapshot => {
       snapshot.forEach(doc => {
         // doc.data() is never undefined for query doc snapshots
         console.log(doc.id, " => ", doc.data());
+        console.log(doc.get("timestamp").toDate());
       });
       return true;
     })
-    .catch((error) => {
+    .catch(error => {
       console.log("Error getting documents: ", error);
       return "test";
     });
@@ -432,7 +437,7 @@ exports.timetest = functions.https.onRequest((req, res) => {
         return res.status(418).json({
           data: doc.data(),
           actualDate: date,
-          fireStoreTime: firetime.toDate(),
+          fireStoreTime: beginTime.toDate(),
           endTime: endTime.toDate()
           // momented: moment.unix(firetime.toMillis()).format("DD/MM/YYYY HH:mm")
         });
@@ -567,3 +572,25 @@ exports.setData = functions.https.onRequest((req, res) => {
       });
   });
 });
+
+/*Function for adding timestamp to input without timestamp
+@param {string} timestamp - timestamp in format "YYYY-MM-DD" / alternative full format: "YYYY-MM-DDTHH:MM:SS" where SS is optional
+@param {string} type - the type of request, set by the calling function
+return date timestamp for use in firestore timestamp class
+*/
+function timestampHandler(timestamp, type) {
+  let time = "";
+  if (type === "BEGINTIME") {
+    time = "T00:00:00";
+  } else if (type === "ENDTIME") {
+    time = "T23:59:59";
+  } else if (type === "SPOTIFY") {
+    time = "T22:22:22";
+  }
+
+  if (timestamp !== undefined && timestamp.length <= 10) {
+    return new Date(timestamp + time);
+  } else {
+    return new Date(imestamp);
+  }
+}
