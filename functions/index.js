@@ -382,16 +382,34 @@ exports.timetest = functions.https.onRequest((req, res) => {
 
   /** if a query parameter doesn't arrive in the request, use a default fallback */
   // console.log("before: " + date);
-  let date = new Date(req.query.date);
+  let date = req.query.date;
   console.log("after: " + date);
-  let firetime = admin.firestore.Timestamp.fromDate(date);
+  let firetime = admin.firestore.Timestamp.fromDate(new Date(date + "T00:00:00"));
+  let endTime = admin.firestore.Timestamp.fromDate(new Date(date + "T23:59:00"));
   console.log("timeStamp: " + firetime.toDate());
+  
   let resTime = "";
   let collection = "Mood";
-  var addTime = db
-    .collection(collection)
-    .doc("timetest1")
-    .set({ timestamp: firetime });
+  // var addTime = db
+  //   .collection(collection)
+  //   .doc("timetest1")
+  //   .set({ timestamp: firetime });
+
+let newRes = db.collection(collection).where("timestamp", ">", firetime).where("timestamp", "<", endTime)
+ .get()
+    .then(snapshot => {
+        snapshot.forEach(doc => {
+            // doc.data() is never undefined for query doc snapshots
+            console.log(doc.id, " => ", doc.data());
+            
+        });
+        return true;
+    }) 
+    .catch(function(error) {
+        console.log("Error getting documents: ", error);
+        return "test";
+    });
+
 
   var getTime = db.collection(collection).doc("timetest1");
   var getDoc = getTime
@@ -401,15 +419,16 @@ exports.timetest = functions.https.onRequest((req, res) => {
         console.log("No such document!");
         return false;
       } else {
-        console.log("Document data:", doc.data());
+        // console.log("Document data:", doc.data());
         resTime = doc.get("timestamp");
-        console.log("Got time: " + resTime.toDate());
-        console.log(resTime.toMillis());
+        // console.log("Got time: " + resTime.toDate());
+        // console.log(resTime.toMillis());
         return res.status(418).json({
           data: doc.data(),
           actualDate: date,
           fireStoreTime: firetime.toDate(),
-          momented: moment.unix(firetime.toMillis()).format("DD/MM/YYYY HH:mm")
+          endTime: endTime.toDate()
+          // momented: moment.unix(firetime.toMillis()).format("DD/MM/YYYY HH:mm")
         });
       }
     })
