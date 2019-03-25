@@ -448,6 +448,10 @@ exports.timetest = functions.https.onRequest((req, res) => {
     });
 });
 
+/*
+function for getting DailyMusic with UserID and DateListened as input, works with firestores timestamp
+*/
+
 exports.getDate = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
     let query = db.collection("DailyMusic");
@@ -484,8 +488,7 @@ exports.getDate = functions.https.onRequest((req, res) => {
           snapshot.forEach(doc => {
             result.push(doc.data());
             date = doc.get("DateListened");
-
-            console.log("fra firebase:", date);
+            console.log(date.toDate());
             /*
           dateTo = date.toDate();
           console.log("etter toDate():", dateTo)
@@ -591,6 +594,74 @@ function timestampHandler(timestamp, type) {
   if (timestamp !== undefined && timestamp.length <= 10) {
     return new Date(timestamp + time);
   } else {
-    return new Date(imestamp);
+    return new Date(timestamp);
   }
 }
+
+/*Function for adding hours, minutes and seconds to a date input, and returning it as UNIX timestamp
+@param {string} timestamp - timestamp in format "YYYY-MM-DD" / alternative full format: "YYYY-MM-DDTHH:MM:SS" where SS is optional
+@param {string} type - the type of request, set by the calling function
+return UNIX timestamp
+*/
+
+function unixTimestampHandler(timestamp, type){
+  let time = "";
+  if(type === "UNIXBEGINTIME") {
+    time = "00:00:00";
+  }
+  else if (type === "UNIXENDTIME"){
+    time = "23:59:59";
+  }
+
+  if (timestamp !== undefined && timestamp.length <=10) {
+    return (moment(timestamp + time, "YYYY/MM/DD HH:mm:ss").unix());
+  } else {
+    return new (timestamp);
+  }
+}
+
+/*
+function for getting DailyMusic with UserID and DateListened where DateListened is in UNIX timestamp format
+*/
+
+exports.getDailyMusicUnix = functions.https.onRequest((req, res) => {
+  cors(req, res, () => {
+
+    let query = db.collection("DailyMusic");
+
+    let getUser = req.query.UserID;
+    let getDateFromUser = req.query.DateListened;
+
+    let unixStart = unixTimestampHandler(getDateFromUser, "UNIXBEGINTIME");
+    let unixEnd = unixTimestampHandler(getDateFromUser, "UNIXENDTIME");
+
+    if (getUser !== undefined) {
+      let result = [];
+      let users = query
+      .where("UserID", "==", getUser)
+      .where("DateListened", ">", unixStart)
+      .where("DateListened", "<", unixEnd)
+        .get()
+        .then(snapshot => {
+          if (snapshot.empty) {
+            return res.status(413).json({
+              error: "No matching documents"
+            });
+          }
+            snapshot.forEach(doc => {
+            result.push(doc.data());
+          });
+            return res.status(200).json({
+              dateis: result
+          });
+        })
+        
+        .catch(err => {
+          let errmsg = "error getting docs," + err;
+          return res.status(416).json({
+            error2: errmsg
+          });
+        });
+    }
+  });
+});
