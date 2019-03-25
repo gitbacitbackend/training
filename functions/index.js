@@ -143,7 +143,7 @@ exports.registerMusic = functions.firestore
         }
       };
       let playedSong = spotMock["played_at"];
-      let firedate = admin.firestore.Timestamp.fromDate(playedSong);
+      let firedate = admin.firestore.Timestamp.fromDate(timestampHandler(playedSong));
       delete spotMock["played_at"];
       spotMock["timestamp"] = fireDate;
       // Insert object to database and timestamp will be timestamp
