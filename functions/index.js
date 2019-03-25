@@ -132,6 +132,22 @@ exports.registerMusic = functions.firestore
           return doc.data();
         }
       }) // TODO: Spotify/Digime call here
+      // mocked spotify data
+      let spotMock = {
+                "played_at": "2016-12-13T20:44:04.589Z",
+      "context": {
+        "uri": "spotify:artist:5INjqkS1o8h1imAzPqGZBb",
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/5INjqkS1o8h1imAzPqGZBb"
+        },
+        }
+      };
+      let playedSong = spotMock["played_at"];
+      let firedate = admin.firestore.Timestamp.fromDate(playedSong);
+      delete spotMock["played_at"];
+      spotMock["timestamp"] = fireDate;
+      // Insert object to database and timestamp will be timestamp
+      
       .catch(err => {
         console.log("Error getting document", err);
       });
@@ -577,8 +593,8 @@ exports.setData = functions.https.onRequest((req, res) => {
 });
 
 /*Function for adding timestamp to input without timestamp
-@param {string} timestamp - timestamp in format "YYYY-MM-DD" / alternative full format: "YYYY-MM-DDTHH:MM:SS" where SS is optional
-@param {string} type - the type of request, set by the calling function
+@param {string/number} timestamp - timestamp in format "YYYY-MM-DD" / alternative full format: "YYYY-MM-DDTHH:MM:SS" where SS is optional
+@param {string} type - the type of request, set by the calling function, optional param
 return date timestamp for use in firestore timestamp class
 */
 function timestampHandler(timestamp, type) {
@@ -591,8 +607,12 @@ function timestampHandler(timestamp, type) {
     time = "T22:22:22";
   }
 
-  if (timestamp !== undefined && timestamp.length <= 10) {
-    return new Date(timestamp + time);
+  if (timestamp !== undefined && timestamp.toString().length <= 10) {
+      if (time !== "") {
+           return new Date(timestamp + time);
+      } else {
+        return new Date(timestamp*1000);
+      }
   } else {
     return new Date(timestamp);
   }
