@@ -120,7 +120,8 @@ exports.registerMusic = functions.firestore
     let userID = newValue.userID;
     let spotifyID = "";
     let query = db.collection("users").doc(userID);
-
+    let songObj = {};
+    songObj["userID"] = userID;
     var getDoc = query
       .get()
       .then(doc => {
@@ -130,6 +131,7 @@ exports.registerMusic = functions.firestore
         } else {
           console.log("Document data:", doc.data());
           spotifyID = doc.get("spotifyID");
+          songObj["spotifyID"] = doc.get("spotifyID");
           console.log("Resulting id: " + spotifyID);
           return doc.data();
         }
@@ -141,11 +143,11 @@ exports.registerMusic = functions.firestore
     // mocked spotify data
     let spotMock = {
       played_at: "2016-12-13T20:44:04.589Z",
+      id: "3JIxjvbbDrA9ztYlNcp3yL",
       context: {
         uri: "spotify:artist:5INjqkS1o8h1imAzPqGZBb",
         external_urls: {
-          spotify: "https://open.spotify.com/artist/5INjqkS1o8h1imAzPqGZBb",
-          id: "2NEz4Ky23MTSloizbPVjJW"
+          spotify: "https://open.spotify.com/artist/5INjqkS1o8h1imAzPqGZBb"
         }
       }
     };
@@ -155,7 +157,7 @@ exports.registerMusic = functions.firestore
     spotMock["timestamp"] = firedate;
 
     let id = spotMock["id"];
-    console.log(id);
+    // console.log(id);
 
     var spotify = new Spotify({
       id: "dd688945254743afbb40e5d9cf00ad11",
@@ -163,11 +165,16 @@ exports.registerMusic = functions.firestore
     });
 
     spotify
-      .request(
-        "https://api.spotify.com/v1/audio-features/3JIxjvbbDrA9ztYlNcp3yL"
-      )
+      .request("https://api.spotify.com/v1/audio-features/" + id)
       .then(data => {
         console.log(data);
+        songObj["energy"] = data.energy;
+        songObj["danceability"] = data.danceability;
+        songObj["valence"] = data.valence;
+        songObj["id"] = data.id;
+        console.log(songObj);
+
+        let register = db.collection("Music").add(songObj);
         return data;
       })
       .catch(err => {
