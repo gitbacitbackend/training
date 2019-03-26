@@ -131,7 +131,11 @@ exports.registerMusic = functions.firestore
           console.log("Resulting id: " + spotifyID);
           return doc.data();
         }
-      }) // TODO: Spotify/Digime call here
+      }) 
+         .catch(err => {
+        console.log("Error getting document", err);
+      });
+      // TODO: Spotify/Digime call here
       // mocked spotify data
       let spotMock = {
                 "played_at": "2016-12-13T20:44:04.589Z",
@@ -148,9 +152,7 @@ exports.registerMusic = functions.firestore
       spotMock["timestamp"] = fireDate;
       // Insert object to database and timestamp will be timestamp
       
-      .catch(err => {
-        console.log("Error getting document", err);
-      });
+   
 
     // [END basic_wildcard]
   });
@@ -404,12 +406,8 @@ exports.timetest = functions.https.onRequest((req, res) => {
   let date = req.query.date;
   let userID = req.query.user;
   // console.log("after: " + date);
-  let beginTime = admin.firestore.Timestamp.fromDate(
-    timestampHandler(date, "BEGINTIME")
-  );
-  let endTime = admin.firestore.Timestamp.fromDate(
-    timestampHandler(date, "ENDTIME")
-  );
+  let beginTime = timestampHandler(date, "BEGINTIME");
+  let endTime =  timestampHandler(date, "ENDTIME");
   console.log("timeStamp: " + beginTime.toDate());
 
   let resTime = "";
@@ -609,12 +607,12 @@ function timestampHandler(timestamp, type) {
 
   if (timestamp !== undefined && timestamp.toString().length <= 10) {
       if (time !== "") {
-           return new Date(timestamp + time);
+           return admin.firestore.Timestamp.fromDate(new Date(timestamp + time));
       } else {
-        return new Date(timestamp*1000);
+        return admin.firestore.Timestamp.fromDate(new Date(timestamp*1000));
       }
   } else {
-    return new Date(timestamp);
+    return admin.firestore.Timestamp.fromDate(new Date(timestamp));
   }
 }
 
