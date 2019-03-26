@@ -107,6 +107,8 @@ exports.registerMood = functions.https.onRequest((req, res) => {
 // [START basic_wildcard]
 // Listen for creation of documents in the 'mood' collection
 // Initiate spotify call from here
+
+
 exports.registerMusic = functions.firestore
   .document("Mood/{userID}")
   .onCreate((snap, context) => {
@@ -131,37 +133,65 @@ exports.registerMusic = functions.firestore
           console.log("Resulting id: " + spotifyID);
           return doc.data();
         }
-      }) // TODO: Spotify/Digime call here
-      // mocked spotify data
-      let spotMock = {
-                "played_at": "2016-12-13T20:44:04.589Z",
-      "context": {
-        "uri": "spotify:artist:5INjqkS1o8h1imAzPqGZBb",
-        "external_urls": {
-          "spotify": "https://open.spotify.com/artist/5INjqkS1o8h1imAzPqGZBb"
-        },
-        }
-      };
-      let playedSong = spotMock["played_at"];
-      let firedate = admin.firestore.Timestamp.fromDate(timestampHandler(playedSong));
-      delete spotMock["played_at"];
-      spotMock["timestamp"] = fireDate;
-      // Insert object to database and timestamp will be timestamp
-      
+      })
       .catch(err => {
         console.log("Error getting document", err);
       });
+    // TODO: Spotify/Digime call here
+    // mocked spotify data
+    let spotMock = {
+      "played_at": "2016-12-13T20:44:04.589Z",
+      "context": {
+        "uri": "spotify:artist:5INjqkS1o8h1imAzPqGZBb",
+        "external_urls": {
+          "spotify": "https://open.spotify.com/artist/5INjqkS1o8h1imAzPqGZBb",
+          "id": "2NEz4Ky23MTSloizbPVjJW"
+        },
+      }
+    };
+    let playedSong = spotMock["played_at"];
+    let firedate = admin.firestore.Timestamp.fromDate(timestampHandler(playedSong));
+    delete spotMock["played_at"];
+    spotMock["timestamp"] = firedate;
 
-    // [END basic_wildcard]
+    let id = spotMock["id"];
+    let fetch = require("node-fetch");
+    let headers = {
+      Authorization: "Bearer BQDl77CQu-9vwS6NdEoINDQjVpNhuKw4O8kZ1viZTrhEXISx-0vEBh-_Zc1T-EKhcqvldb5pi0W3sX9IUOHGZ1i-_Czr0a0kDzpPLuCHALJc2baXPoNKgz0RZ_Foy-AsaUBmAOSxhsjDhJ4xSzk",
+      Accept: "application/json",
+      'Content-Type': "application/json"
+
+    };
+
+    (async () =>  {
+      let data = await fetch("https://api.spotify.com/v1/audio-features/" + id,
+       { 
+        method: 'GET',
+        headers: headers
+        });
+      let main = await data.json();
+      console.log(main);
+
+
+      if (main && typeof main === "object") {
+        Object.keys(main).forEach(docKey => {
+          console.log(docKey)
+        });
+        return null;
+
+        // Insert object to database and timestamp will be timestamp
+
+      }
+    
+      // [END basic_wildcard]
+    })();
   });
-
 // Function for querying music collection
 exports.getMusic = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
     const getUser = req.query.userID;
     const getMood = req.query.mood;
     const getType = req.query.type;
-
     const query = db.collection("Music");
 
     // Get specific mood by user
@@ -608,11 +638,11 @@ function timestampHandler(timestamp, type) {
   }
 
   if (timestamp !== undefined && timestamp.toString().length <= 10) {
-      if (time !== "") {
-           return new Date(timestamp + time);
-      } else {
-        return new Date(timestamp*1000);
-      }
+    if (time !== "") {
+      return new Date(timestamp + time);
+    } else {
+      return new Date(timestamp * 1000);
+    }
   } else {
     return new Date(timestamp);
   }
@@ -624,16 +654,16 @@ function timestampHandler(timestamp, type) {
 return UNIX timestamp
 */
 
-function unixTimestampHandler(timestamp, type){
+function unixTimestampHandler(timestamp, type) {
   let time = "";
-  if(type === "UNIXBEGINTIME") {
+  if (type === "UNIXBEGINTIME") {
     time = "00:00:00";
   }
-  else if (type === "UNIXENDTIME"){
+  else if (type === "UNIXENDTIME") {
     time = "23:59:59";
   }
 
-  if (timestamp !== undefined && timestamp.length <=10) {
+  if (timestamp !== undefined && timestamp.length <= 10) {
     return (moment(timestamp + time, "YYYY/MM/DD HH:mm:ss").unix());
   } else {
     return new (timestamp);
@@ -652,15 +682,18 @@ exports.getDailyMusicUnix = functions.https.onRequest((req, res) => {
     let getUser = req.query.UserID;
     let getDateFromUser = req.query.DateListened;
 
-    let unixStart = unixTimestampHandler(getDateFromUser, "UNIXBEGINTIME");
-    let unixEnd = unixTimestampHandler(getDateFromUser, "UNIXENDTIME");
+    let unixStart = timestampHandler(getDateFromUser, "BEGINTIME");
+    let unixEnd = timestampHandler(getDateFromUser, "ENDTIME");
+
+    console.log(moment(unixStart).isoWeekday());
+    console.log(moment(unixStart).isoWeek());
 
     if (getUser !== undefined) {
       let result = [];
       let users = query
-      .where("UserID", "==", getUser)
-      .where("DateListened", ">", unixStart)
-      .where("DateListened", "<", unixEnd)
+        .where("UserID", "==", getUser)
+        .where("DateListened", ">", unixStart)
+        .where("DateListened", "<", unixEnd)
         .get()
         .then(snapshot => {
           if (snapshot.empty) {
@@ -668,14 +701,14 @@ exports.getDailyMusicUnix = functions.https.onRequest((req, res) => {
               error: "No matching documents"
             });
           }
-            snapshot.forEach(doc => {
+          snapshot.forEach(doc => {
             result.push(doc.data());
           });
-            return res.status(200).json({
-              dateis: result
+          return res.status(200).json({
+            dateis: result
           });
         })
-        
+
         .catch(err => {
           let errmsg = "error getting docs," + err;
           return res.status(416).json({
@@ -685,3 +718,4 @@ exports.getDailyMusicUnix = functions.https.onRequest((req, res) => {
     }
   });
 });
+
