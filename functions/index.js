@@ -119,9 +119,10 @@ exports.registerMusic = functions.firestore
     // access a particular field as you would any JS property
     let userID = newValue.userID;
     let spotifyID = "";
-    let query = db.collection("users").doc(userID);
     let songObj = {};
     songObj["userID"] = userID;
+    let query = db.collection("users").doc(userID);
+
     var getDoc = query
       .get()
       .then(doc => {
@@ -139,6 +140,7 @@ exports.registerMusic = functions.firestore
       .catch(err => {
         console.log("Error getting document", err);
       });
+
     // TODO: Spotify/Digime call here
     // mocked spotify data
     let spotMock = {
