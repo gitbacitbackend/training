@@ -20,7 +20,8 @@
     "firebase-tools": "^6.5.0",
     "latest": "^0.2.0",
     "moment": "^2.24.0",
-    "node-fetch": "^2.3.0"
+    "node-fetch": "^2.3.0",
+    "node-spotify-api": "^1.0.7"
   },
   "devDependencies": {
     "eslint": "^5.12.0",

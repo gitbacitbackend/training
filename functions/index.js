@@ -3,6 +3,7 @@
 const functions = require("firebase-functions");
 const cors = require("cors")({ origin: true });
 const moment = require("moment");
+const Spotify = require("node-spotify-api");
 
 // The Firebase Admin SDK to access the Firebase Realtime Database.
 const admin = require("firebase-admin");
@@ -108,7 +109,6 @@ exports.registerMood = functions.https.onRequest((req, res) => {
 // Listen for creation of documents in the 'mood' collection
 // Initiate spotify call from here
 
-
 exports.registerMusic = functions.firestore
   .document("Mood/{userID}")
   .onCreate((snap, context) => {
@@ -133,58 +133,47 @@ exports.registerMusic = functions.firestore
           console.log("Resulting id: " + spotifyID);
           return doc.data();
         }
-      }) 
-         .catch(err => {
+      })
+      .catch(err => {
         console.log("Error getting document", err);
       });
-      // TODO: Spotify/Digime call here
-      // mocked spotify data
-      let spotMock = {
-                "played_at": "2016-12-13T20:44:04.589Z",
-      "context": {
-        "uri": "spotify:artist:5INjqkS1o8h1imAzPqGZBb",
-        "external_urls": {
-          "spotify": "https://open.spotify.com/artist/5INjqkS1o8h1imAzPqGZBb",
-          "id": "2NEz4Ky23MTSloizbPVjJW"
-        },
+    // TODO: Spotify/Digime call here
+    // mocked spotify data
+    let spotMock = {
+      played_at: "2016-12-13T20:44:04.589Z",
+      context: {
+        uri: "spotify:artist:5INjqkS1o8h1imAzPqGZBb",
+        external_urls: {
+          spotify: "https://open.spotify.com/artist/5INjqkS1o8h1imAzPqGZBb",
+          id: "2NEz4Ky23MTSloizbPVjJW"
+        }
       }
     };
     let playedSong = spotMock["played_at"];
-    let firedate = admin.firestore.Timestamp.fromDate(timestampHandler(playedSong));
+    let firedate = timestampHandler(playedSong);
     delete spotMock["played_at"];
     spotMock["timestamp"] = firedate;
 
     let id = spotMock["id"];
-    let fetch = require("node-fetch");
-    let headers = {
-      Authorization: "Bearer BQDl77CQu-9vwS6NdEoINDQjVpNhuKw4O8kZ1viZTrhEXISx-0vEBh-_Zc1T-EKhcqvldb5pi0W3sX9IUOHGZ1i-_Czr0a0kDzpPLuCHALJc2baXPoNKgz0RZ_Foy-AsaUBmAOSxhsjDhJ4xSzk",
-      Accept: "application/json",
-      'Content-Type': "application/json"
+    console.log(id);
 
-    };
+    var spotify = new Spotify({
+      id: "dd688945254743afbb40e5d9cf00ad11",
+      secret: "16a2d6653a9e4d55a0108bc156a829a6"
+    });
 
-    (async () =>  {
-      let data = await fetch("https://api.spotify.com/v1/audio-features/" + id,
-       { 
-        method: 'GET',
-        headers: headers
-        });
-      let main = await data.json();
-      console.log(main);
-
-
-      if (main && typeof main === "object") {
-        Object.keys(main).forEach(docKey => {
-          console.log(docKey)
-        });
-        return null;
-
-        // Insert object to database and timestamp will be timestamp
-
-      }
-    
-      // [END basic_wildcard]
-    })();
+    spotify
+      .request(
+        "https://api.spotify.com/v1/audio-features/3JIxjvbbDrA9ztYlNcp3yL"
+      )
+      .then(data => {
+        console.log(data);
+        return data;
+      })
+      .catch(err => {
+        console.error("Error occurred: " + err);
+        return err;
+      });
   });
 // Function for querying music collection
 exports.getMusic = functions.https.onRequest((req, res) => {
@@ -435,7 +424,7 @@ exports.timetest = functions.https.onRequest((req, res) => {
   let userID = req.query.user;
   // console.log("after: " + date);
   let beginTime = timestampHandler(date, "BEGINTIME");
-  let endTime =  timestampHandler(date, "ENDTIME");
+  let endTime = timestampHandler(date, "ENDTIME");
   console.log("timeStamp: " + beginTime.toDate());
 
   let resTime = "";
@@ -634,11 +623,11 @@ function timestampHandler(timestamp, type) {
   }
 
   if (timestamp !== undefined && timestamp.toString().length <= 10) {
-      if (time !== "") {
-           return admin.firestore.Timestamp.fromDate(new Date(timestamp + time));
-      } else {
-        return admin.firestore.Timestamp.fromDate(new Date(timestamp*1000));
-      }
+    if (time !== "") {
+      return admin.firestore.Timestamp.fromDate(new Date(timestamp + time));
+    } else {
+      return admin.firestore.Timestamp.fromDate(new Date(timestamp * 1000));
+    }
   } else {
     return admin.firestore.Timestamp.fromDate(new Date(timestamp));
   }
@@ -654,15 +643,14 @@ function unixTimestampHandler(timestamp, type) {
   let time = "";
   if (type === "UNIXBEGINTIME") {
     time = "00:00:00";
-  }
-  else if (type === "UNIXENDTIME") {
+  } else if (type === "UNIXENDTIME") {
     time = "23:59:59";
   }
 
   if (timestamp !== undefined && timestamp.length <= 10) {
-    return (moment(timestamp + time, "YYYY/MM/DD HH:mm:ss").unix());
+    return moment(timestamp + time, "YYYY/MM/DD HH:mm:ss").unix();
   } else {
-    return new (timestamp);
+    return new timestamp();
   }
 }
 
@@ -672,7 +660,6 @@ function for getting DailyMusic with UserID and DateListened where DateListened 
 
 exports.getDailyMusicUnix = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
-
     let query = db.collection("DailyMusic");
 
     let getUser = req.query.UserID;
@@ -714,4 +701,3 @@ exports.getDailyMusicUnix = functions.https.onRequest((req, res) => {
     }
   });
 });
-
