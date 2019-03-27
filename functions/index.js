@@ -722,3 +722,65 @@ exports.getDailyMusicUnix = functions.https.onRequest((req, res) => {
     }
   });
 });
+
+exports.getMusicWeek = functions.https.onRequest((req, res) => {
+  cors(req, res,() => {
+
+    const query = db.collection("statsMusic"); 
+    const getWeekID = req.query.weekID;
+    const getUserID = req.query.userID; 
+
+    if (getWeekID !== undefined) {
+      let result = [];
+      let sum = 0;
+      
+      let music = query
+      .where('weekID', '==', getWeekID)
+      .get()
+      .then(snapshot => {
+      let date = "";
+        if (snapshot.emtpy) {
+          return res.status(413).json({
+            error: "No document for this weekID"
+          })
+        }
+        snapshot.forEach(doc => {
+          result.push(doc.data());
+          date = doc.get("timestamp").toDate();
+          day = doc.get("dayID");
+
+         // date2 = admin.firestore.Timestamp.fromDate(new Date(date *1000));
+          weekday = moment(date).isoWeekday();
+          week = moment(date).isoWeek();
+        //  console.log(date2);
+          console.log(weekday);
+          console.log(week);
+          //let dayum = 1;
+
+      
+        /*      
+           do {
+            sum += parseInt(doc.get("Valence"));
+            console.log("sum er:", sum)
+            dayum ++;
+           }
+            while( counter === day)  
+         */
+
+        
+        });
+        });
+        return res.status(200).json({
+          WeekFound: result
+        })
+      
+    
+      .catch(err=> {
+        let errmsg = "Error getting documents" + err;
+        return res.status(416).json({
+          error: errmsg
+        })
+      });
+    }
+  });
+});
