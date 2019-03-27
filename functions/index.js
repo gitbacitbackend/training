@@ -145,13 +145,7 @@ exports.registerMusic = functions.firestore
     // mocked spotify data
     let spotMock = {
       played_at: "2016-12-13T20:44:04.589Z",
-      id: "3JIxjvbbDrA9ztYlNcp3yL",
-      context: {
-        uri: "spotify:artist:5INjqkS1o8h1imAzPqGZBb",
-        external_urls: {
-          spotify: "https://open.spotify.com/artist/5INjqkS1o8h1imAzPqGZBb"
-        }
-      }
+      id: "6gPqBegU4aDWoSYXeCyURA"
     };
     let playedSong = spotMock["played_at"];
     let firedate = timestampHandler(playedSong);
@@ -183,6 +177,24 @@ exports.registerMusic = functions.firestore
         console.error("Error occurred: " + err);
         return err;
       });
+
+      spotify
+      .request("https://api.spotify.com/v1/tracks/" + id)
+      .then (data => {
+        console.log(data);
+        songObj["name"] = data.name;
+     //   songObj["artist"] = data.artist;
+
+
+        let register = db.collection("Music").add(songObj);
+        return data;
+      })
+      .catch(err => {
+        console.error("Error occurred: " + err);
+        return err;
+      });
+
+
   });
 // Function for querying music collection
 exports.getMusic = functions.https.onRequest((req, res) => {
