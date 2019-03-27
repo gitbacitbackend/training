@@ -1,3 +1,5 @@
+/* eslint-disable promise/always-return */
+/* eslint-disable promise/catch-or-return */
 //https://us-central1-mmfapp-3603c.cloudfunctions.net/addMessage?text=
 // The Cloud Functions for Firebase SDK to create Cloud Functions and setup triggers.
 const functions = require("firebase-functions");
@@ -122,35 +124,17 @@ exports.registerMusic = functions.firestore
     let songObj = {};
     songObj["userID"] = userID;
     let query = db.collection("users").doc(userID);
-
-    var getDoc = query
-      .get()
-      .then(doc => {
-        if (!doc.exists) {
-          console.log("No such document!");
-          return false;
-        } else {
-          console.log("Document data:", doc.data());
-          spotifyID = doc.get("spotifyID");
-          songObj["spotifyID"] = doc.get("spotifyID");
-          console.log("Resulting id: " + spotifyID);
-          return doc.data();
-        }
-      })
-      .catch(err => {
-        console.log("Error getting document", err);
-      });
-
-    // TODO: Spotify/Digime call here
-    // mocked spotify data
     let spotMock = {
       played_at: "2016-12-13T20:44:04.589Z",
       id: "509d30cJOPYF8J6WVpcZtx"
     };
     let playedSong = spotMock["played_at"];
     let firedate = timestampHandler(playedSong);
-    delete spotMock["played_at"];
-    spotMock["timestamp"] = firedate;
+    // delete spotMock["played_at"];
+    // console.log(firedate);
+    songObj["timestamp"] = firedate.timestamp;
+    songObj["weekday"] = firedate.weekday;
+    songObj["week"] = firedate.week;
 
     let id = spotMock["id"];
     // console.log(id);
@@ -159,40 +143,85 @@ exports.registerMusic = functions.firestore
       id: "dd688945254743afbb40e5d9cf00ad11",
       secret: "16a2d6653a9e4d55a0108bc156a829a6"
     });
+    // let promise = new Promise((resolve, reject) => {
 
-    spotify
+    // })
+
+    var getSpotifyID = query
+      .get()
+      .then(doc => {
+        if (!doc.exists) {
+          console.log("No such document!");
+          return err;
+        } else {
+          console.log("Document data:", doc.data());
+          spotifyID = doc.get("spotifyID");
+          songObj["spotifyID"] = doc.get("spotifyID");
+          // console.log("Resulting id: " + spotifyID);
+          console.log(songObj);
+          // resolve(getSpotifyID);
+          return doc.data();
+        }
+      })
+      .catch(err => {
+        console.log("Error getting document", err);
+      });
+    console.log("This is spotify: ", getSpotifyID);
+
+    var getAudioFeatures = spotify
       .request("https://api.spotify.com/v1/audio-features/" + id)
       .then(data => {
+        console.log("Spotify data: ");
         console.log(data);
         songObj["energy"] = data.energy;
         songObj["danceability"] = data.danceability;
         songObj["valence"] = data.valence;
-        songObj["id"] = data.id;
+        songObj["songID"] = data.id;
+        console.log("After spotify stuff: ");
         console.log(songObj);
 
-        let register = db.collection("Music").add(songObj);
+        // let register = db.collection("Music").add(songObj);
         return data;
       })
       .catch(err => {
         console.error("Error occurred: " + err);
         return err;
       });
+    // spotify
+    //   .request("https://api.spotify.com/v1/audio-features/" + id)
+    //   .then(data => {
+    //     console.log("Spotify data: ");
+    //     console.log(data);
+    //     songObj["energy"] = data.energy;
+    //     songObj["danceability"] = data.danceability;
+    //     songObj["valence"] = data.valence;
+    //     songObj["songID"] = data.id;
+    //     console.log("After spotify stuff: ");
+    //     console.log(songObj);
 
-      spotify
+    //     // let register = db.collection("Music").add(songObj);
+    //     // resolve(getAudioFeatures);
+    //     return data;
+    //   })
+    //   .catch(err => {
+    //     console.error("Error occurred: " + err);
+    //     return err;
+    //   });
+    var getTrack = spotify
       .request("https://api.spotify.com/v1/tracks/" + id)
-      .then (data => {
+      .then(data => {
+        console.log("Spotify track data: ");
         console.log(data);
-        songObj["name"] = data.name;
+        songObj["title"] = data.name;
         // console.log(data.artists[0].name);
-       songObj["artist"] = data.artists[0].name;
-       console.log(Object.keys(data.artists[0]).length);
-       for (artist in data.artists[0]) {
-          console.log("found artist: " + artist.name);
-          console.log("which has obj: " + data.artists[0][artist])
-       }
-
-
-        let register = db.collection("Music").add(songObj);
+        songObj["artist"] = data.artists[0].name;
+        //  console.log(Object.keys(data.artists[0]).length);
+        //  for (artist in data.artists[0]) {
+        //     console.log("found artist: " + artist.name);
+        //     console.log("which has obj: " + data.artists[0][artist])
+        //  }
+        console.log("After track: ");
+        console.log(songObj);
         return data;
       })
       .catch(err => {
@@ -200,7 +229,24 @@ exports.registerMusic = functions.firestore
         return err;
       });
 
+    Promise.all([getSpotifyID, getAudioFeatures, getTrack]).then(values => {
+      console.log("Result from promise: ", values);
+      // eslint-disable-next-line promise/no-nesting
+      db.collection("Music")
+        .add(songObj)
+        .then(docRef => {
+          console.log("Adding this: ");
+          console.log(songObj);
 
+          console.log("Document written with ID: ", docRef.id);
+          // console.log("With content: ", docRef);
+          return docRef;
+        })
+        .catch(error => {
+          console.error("Error adding document: ", error);
+          return error;
+        });
+    });
   });
 // Function for querying music collection
 exports.getMusic = functions.https.onRequest((req, res) => {
@@ -651,13 +697,33 @@ function timestampHandler(timestamp, type) {
 
   if (timestamp !== undefined && timestamp.toString().length <= 10) {
     if (time !== "") {
-      return admin.firestore.Timestamp.fromDate(new Date(timestamp + time));
+      let fullTime = {};
+      fullTime["timestamp"] = firedate = admin.firestore.Timestamp.fromDate(
+        new Date(timestamp + time)
+      );
+      fullTime["weekday"] = weekday = moment(firedate).isoWeekday();
+      fullTime["week"] = week = moment(firedate).isoWeek();
+      return fullTime;
     } else {
-      return admin.firestore.Timestamp.fromDate(new Date(timestamp * 1000));
+      let fullTime = {};
+      fullTime["timestamp"] = firedate = admin.firestore.Timestamp.fromDate(
+        new Date(timestamp * 1000)
+      );
+      fullTime["weekday"] = weekday = moment(firedate).isoWeekday();
+      fullTime["week"] = week = moment(firedate).isoWeek();
+      return fullTime;
     }
   } else {
-    return admin.firestore.Timestamp.fromDate(new Date(timestamp));
+    let fullTime = {};
+    fullTime["timestamp"] = firedate = admin.firestore.Timestamp.fromDate(
+      new Date(timestamp)
+    );
+    fullTime["weekday"] = weekday = moment(firedate).isoWeekday();
+    fullTime["week"] = week = moment(firedate).isoWeek();
+    return fullTime;
   }
+
+  //  console.log(date2);
 }
 
 /*Function for adding hours, minutes and seconds to a date input, and returning it as UNIX timestamp
@@ -730,41 +796,39 @@ exports.getDailyMusicUnix = functions.https.onRequest((req, res) => {
 });
 
 exports.getMusicWeek = functions.https.onRequest((req, res) => {
-  cors(req, res,() => {
-
-    const query = db.collection("statsMusic"); 
+  cors(req, res, () => {
+    const query = db.collection("statsMusic");
     const getWeekID = req.query.weekID;
-    const getUserID = req.query.userID; 
+    const getUserID = req.query.userID;
 
     if (getWeekID !== undefined) {
       let result = [];
       let sum = 0;
-      
+
       let music = query
-      .where('weekID', '==', getWeekID)
-      .get()
-      .then(snapshot => {
-      let date = "";
-        if (snapshot.emtpy) {
-          return res.status(413).json({
-            error: "No document for this weekID"
-          })
-        }
-        snapshot.forEach(doc => {
-          result.push(doc.data());
-          date = doc.get("timestamp").toDate();
-          day = doc.get("dayID");
+        .where("weekID", "==", getWeekID)
+        .get()
+        .then(snapshot => {
+          let date = "";
+          if (snapshot.emtpy) {
+            return res.status(413).json({
+              error: "No document for this weekID"
+            });
+          }
+          snapshot.forEach(doc => {
+            result.push(doc.data());
+            date = doc.get("timestamp").toDate();
+            day = doc.get("dayID");
 
-         // date2 = admin.firestore.Timestamp.fromDate(new Date(date *1000));
-          weekday = moment(date).isoWeekday();
-          week = moment(date).isoWeek();
-        //  console.log(date2);
-          console.log(weekday);
-          console.log(week);
-          //let dayum = 1;
+            // date2 = admin.firestore.Timestamp.fromDate(new Date(date *1000));
+            weekday = moment(date).isoWeekday();
+            week = moment(date).isoWeek();
+            //  console.log(date2);
+            console.log(weekday);
+            console.log(week);
+            //let dayum = 1;
 
-      
-        /*      
+            /*      
            do {
             sum += parseInt(doc.get("Valence"));
             console.log("sum er:", sum)
@@ -772,21 +836,21 @@ exports.getMusicWeek = functions.https.onRequest((req, res) => {
            }
             while( counter === day)  
          */
-
-        
+          });
+          return null;
         });
-        });
-        return res.status(200).json({
+      return res
+        .status(200)
+        .json({
           WeekFound: result
         })
-      
-    
-      .catch(err=> {
-        let errmsg = "Error getting documents" + err;
-        return res.status(416).json({
-          error: errmsg
-        })
-      });
+
+        .catch(err => {
+          let errmsg = "Error getting documents" + err;
+          return res.status(416).json({
+            error: errmsg
+          });
+        });
     }
   });
 });
