@@ -145,7 +145,7 @@ exports.registerMusic = functions.firestore
     // mocked spotify data
     let spotMock = {
       played_at: "2016-12-13T20:44:04.589Z",
-      id: "6gPqBegU4aDWoSYXeCyURA"
+      id: "509d30cJOPYF8J6WVpcZtx"
     };
     let playedSong = spotMock["played_at"];
     let firedate = timestampHandler(playedSong);
@@ -183,7 +183,13 @@ exports.registerMusic = functions.firestore
       .then (data => {
         console.log(data);
         songObj["name"] = data.name;
-     //   songObj["artist"] = data.artist;
+        // console.log(data.artists[0].name);
+       songObj["artist"] = data.artists[0].name;
+       console.log(Object.keys(data.artists[0]).length);
+       for (artist in data.artists[0]) {
+          console.log("found artist: " + artist.name);
+          console.log("which has obj: " + data.artists[0][artist])
+       }
 
 
         let register = db.collection("Music").add(songObj);
