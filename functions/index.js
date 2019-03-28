@@ -117,13 +117,16 @@ exports.registerMusic = functions.firestore
     // Get an object representing the document
     // e.g. {'name': 'Marie', 'age': 66}
     let newValue = snap.data();
-
     // access a particular field as you would any JS property
     let userID = newValue.userID;
+    var spotify = new Spotify({
+      id: "dd688945254743afbb40e5d9cf00ad11",
+      secret: "16a2d6653a9e4d55a0108bc156a829a6"
+    });
+
     let spotifyID = "";
     let songObj = {};
     songObj["userID"] = userID;
-    let query = db.collection("users").doc(userID);
     let spotMock = {
       played_at: "2016-12-13T20:44:04.589Z",
       id: "509d30cJOPYF8J6WVpcZtx"
@@ -139,14 +142,10 @@ exports.registerMusic = functions.firestore
     let id = spotMock["id"];
     // console.log(id);
 
-    var spotify = new Spotify({
-      id: "dd688945254743afbb40e5d9cf00ad11",
-      secret: "16a2d6653a9e4d55a0108bc156a829a6"
-    });
     // let promise = new Promise((resolve, reject) => {
 
     // })
-
+    let query = db.collection("users").doc(userID);
     var getSpotifyID = query
       .get()
       .then(doc => {
@@ -158,7 +157,7 @@ exports.registerMusic = functions.firestore
           spotifyID = doc.get("spotifyID");
           songObj["spotifyID"] = doc.get("spotifyID");
           // console.log("Resulting id: " + spotifyID);
-          console.log(songObj);
+          // console.log(songObj);
           // resolve(getSpotifyID);
           return doc.data();
         }
@@ -166,19 +165,16 @@ exports.registerMusic = functions.firestore
       .catch(err => {
         console.log("Error getting document", err);
       });
-    console.log("This is spotify: ", getSpotifyID);
+    // console.log("This is spotify: ", getSpotifyID);
 
     var getAudioFeatures = spotify
       .request("https://api.spotify.com/v1/audio-features/" + id)
       .then(data => {
-        console.log("Spotify data: ");
-        console.log(data);
+        console.log("Spotify data: ", data);
         songObj["energy"] = data.energy;
         songObj["danceability"] = data.danceability;
         songObj["valence"] = data.valence;
         songObj["songID"] = data.id;
-        console.log("After spotify stuff: ");
-        console.log(songObj);
 
         // let register = db.collection("Music").add(songObj);
         return data;
@@ -187,31 +183,11 @@ exports.registerMusic = functions.firestore
         console.error("Error occurred: " + err);
         return err;
       });
-    // spotify
-    //   .request("https://api.spotify.com/v1/audio-features/" + id)
-    //   .then(data => {
-    //     console.log("Spotify data: ");
-    //     console.log(data);
-    //     songObj["energy"] = data.energy;
-    //     songObj["danceability"] = data.danceability;
-    //     songObj["valence"] = data.valence;
-    //     songObj["songID"] = data.id;
-    //     console.log("After spotify stuff: ");
-    //     console.log(songObj);
 
-    //     // let register = db.collection("Music").add(songObj);
-    //     // resolve(getAudioFeatures);
-    //     return data;
-    //   })
-    //   .catch(err => {
-    //     console.error("Error occurred: " + err);
-    //     return err;
-    //   });
     var getTrack = spotify
       .request("https://api.spotify.com/v1/tracks/" + id)
       .then(data => {
-        console.log("Spotify track data: ");
-        console.log(data);
+        console.log("Spotify track data: ", data);
         songObj["title"] = data.name;
         // console.log(data.artists[0].name);
         songObj["artist"] = data.artists[0].name;
@@ -220,8 +196,7 @@ exports.registerMusic = functions.firestore
         //     console.log("found artist: " + artist.name);
         //     console.log("which has obj: " + data.artists[0][artist])
         //  }
-        console.log("After track: ");
-        console.log(songObj);
+        // console.log("After track: ", songObj);
         return data;
       })
       .catch(err => {
@@ -235,9 +210,7 @@ exports.registerMusic = functions.firestore
       db.collection("Music")
         .add(songObj)
         .then(docRef => {
-          console.log("Adding this: ");
-          console.log(songObj);
-
+          console.log("Adding this: ", songObj);
           console.log("Document written with ID: ", docRef.id);
           // console.log("With content: ", docRef);
           return docRef;
@@ -509,8 +482,8 @@ exports.timetest = functions.https.onRequest((req, res) => {
 
   let newRes = db
     .collection(collection)
-    .where("timestamp", ">", beginTime)
-    .where("timestamp", "<", endTime)
+    .where("timestamp", ">", beginTime.timestamp)
+    .where("timestamp", "<", endTime.timestamp)
     .where("userID", "==", userID)
     .get()
     .then(snapshot => {
@@ -701,16 +674,16 @@ function timestampHandler(timestamp, type) {
       fullTime["timestamp"] = firedate = admin.firestore.Timestamp.fromDate(
         new Date(timestamp + time)
       );
-      fullTime["weekday"] = weekday = moment(firedate).isoWeekday();
-      fullTime["week"] = week = moment(firedate).isoWeek();
+      fullTime["weekday"] = weekday = moment(firedate.toDate()).isoWeekday();
+      fullTime["week"] = week = moment(firedate.toDate()).isoWeek();
       return fullTime;
     } else {
       let fullTime = {};
       fullTime["timestamp"] = firedate = admin.firestore.Timestamp.fromDate(
         new Date(timestamp * 1000)
       );
-      fullTime["weekday"] = weekday = moment(firedate).isoWeekday();
-      fullTime["week"] = week = moment(firedate).isoWeek();
+      fullTime["weekday"] = weekday = moment(firedate.toDate()).isoWeekday();
+      fullTime["week"] = week = moment(firedate.toDate()).isoWeek();
       return fullTime;
     }
   } else {
@@ -718,8 +691,8 @@ function timestampHandler(timestamp, type) {
     fullTime["timestamp"] = firedate = admin.firestore.Timestamp.fromDate(
       new Date(timestamp)
     );
-    fullTime["weekday"] = weekday = moment(firedate).isoWeekday();
-    fullTime["week"] = week = moment(firedate).isoWeek();
+    fullTime["weekday"] = weekday = moment(firedate.toDate()).isoWeekday();
+    fullTime["week"] = week = moment(firedate.toDate()).isoWeek();
     return fullTime;
   }
 
@@ -768,8 +741,8 @@ exports.getDailyMusicUnix = functions.https.onRequest((req, res) => {
       let result = [];
       let users = query
         .where("UserID", "==", getUser)
-        .where("DateListened", ">", unixStart)
-        .where("DateListened", "<", unixEnd)
+        .where("DateListened", ">", unixStart.timestamp)
+        .where("DateListened", "<", unixEnd.timestamp)
         .get()
         .then(snapshot => {
           if (snapshot.empty) {
@@ -838,19 +811,16 @@ exports.getMusicWeek = functions.https.onRequest((req, res) => {
          */
           });
           return null;
-        });
-      return res
-        .status(200)
-        .json({
-          WeekFound: result
         })
-
         .catch(err => {
           let errmsg = "Error getting documents" + err;
           return res.status(416).json({
             error: errmsg
           });
         });
+      return res.status(200).json({
+        WeekFound: result
+      });
     }
   });
 });
