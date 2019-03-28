@@ -117,109 +117,224 @@ exports.registerMusic = functions.firestore
     // Get an object representing the document
     // e.g. {'name': 'Marie', 'age': 66}
     let newValue = snap.data();
+
     // access a particular field as you would any JS property
     let userID = newValue.userID;
+
+    // Spotify identifyer information and new object to use for calls
     var spotify = new Spotify({
       id: "dd688945254743afbb40e5d9cf00ad11",
       secret: "16a2d6653a9e4d55a0108bc156a829a6"
     });
 
-    let spotifyID = "";
-    let songObj = {};
-    songObj["userID"] = userID;
-    let spotMock = {
-      played_at: "2016-12-13T20:44:04.589Z",
-      id: "509d30cJOPYF8J6WVpcZtx"
-    };
-    let playedSong = spotMock["played_at"];
-    let firedate = timestampHandler(playedSong);
-    // delete spotMock["played_at"];
-    // console.log(firedate);
-    songObj["timestamp"] = firedate.timestamp;
-    songObj["weekday"] = firedate.weekday;
-    songObj["week"] = firedate.week;
-
-    let id = spotMock["id"];
-    // console.log(id);
-
-    // let promise = new Promise((resolve, reject) => {
-
-    // })
     let query = db.collection("users").doc(userID);
-    var getSpotifyID = query
-      .get()
-      .then(doc => {
-        if (!doc.exists) {
-          console.log("No such document!");
-          return err;
-        } else {
-          console.log("Document data:", doc.data());
-          spotifyID = doc.get("spotifyID");
-          songObj["spotifyID"] = doc.get("spotifyID");
-          // console.log("Resulting id: " + spotifyID);
-          // console.log(songObj);
-          // resolve(getSpotifyID);
-          return doc.data();
+
+    /* Function for database call to get user information
+     */
+    function getSpotifyID() {
+      return new Promise((resolve, reject) => {
+        query
+          .get()
+          .then(doc => {
+            if (!doc.exists) {
+              console.log("No such document!");
+              reject(err);
+              return err;
+            } else {
+              console.log("Document data:", doc.data());
+              let songObj = {};
+              songObj["spotifyID"] = doc.get("spotifyID");
+              resolve(songObj);
+              return songObj;
+            }
+          })
+          .catch(err => {
+            console.log("Error getting document", err);
+          });
+      });
+    }
+
+    /* Function for API call to spotify for getting audio features from track
+    @param {string} id - id of song to be queried for
+    */
+    function getAudioFeatures(id) {
+      return new Promise((resolve, reject) => {
+        spotify
+          .request("https://api.spotify.com/v1/audio-features/" + id)
+          .then(data => {
+            console.log("Spotify data: ", data);
+            let songObj = {};
+            songObj["energy"] = data.energy;
+            songObj["danceability"] = data.danceability;
+            songObj["valence"] = data.valence;
+            resolve(songObj);
+            return songObj;
+          })
+          .catch(err => {
+            console.error("Error occurred: " + err);
+            reject(err);
+            return err;
+          });
+      });
+    }
+
+    /* Function for API call to spotify for getting track features
+    @param {string} id - id of song to be queried for
+    */
+    function getTrack(id) {
+      return new Promise((resolve, reject) => {
+        spotify
+          .request("https://api.spotify.com/v1/tracks/" + id)
+          .then(data => {
+            console.log("Spotify track data: ", data);
+            let songObj = {};
+            songObj["title"] = data.name;
+            // songObj["artist"] = data.artists[0].name;
+            resolve(songObj);
+            return songObj;
+          })
+          .catch(err => {
+            console.error("Error occurred: " + err);
+            reject(err);
+            return err;
+          });
+      });
+    }
+
+    /* Handle the promises from all queries and API calls
+    @param {object} staticObj - object in JSON format with values to be inserted in database
+    */
+    function promise(staticObj) {
+      Promise.all([
+        getSpotifyID(),
+        getAudioFeatures(staticObj.id),
+        getTrack(staticObj.id)
+      ]).then(result => {
+        console.log("Result from promise: ", result);
+
+        // result comes in form of array, itterate over and assign to object
+        let resObj = {};
+        for (index in result) {
+          Object.assign(resObj, result[index]);
         }
-      })
-      .catch(err => {
-        console.log("Error getting document", err);
+
+        let songObj = {};
+        Object.assign(songObj, resObj, staticObj);
+
+        // Add results to database
+        // eslint-disable-next-line promise/no-nesting
+        db.collection("Music")
+          .add(songObj)
+          .then(docRef => {
+            console.log("Adding this: ", songObj);
+            console.log("Document written with ID: ", docRef.id);
+            // console.log("With content: ", docRef);
+            return docRef;
+          })
+          .catch(error => {
+            console.error("Error adding document: ", error);
+            return error;
+          });
       });
-    // console.log("This is spotify: ", getSpotifyID);
+    }
+    var spotres = {
+      items: [
+        {
+          track: {
+            artists: [
+              {
+                external_urls: {
+                  spotify:
+                    "https://open.spotify.com/artist/5INjqkS1o8h1imAzPqGZBb"
+                },
+                href:
+                  "https://api.spotify.com/v1/artists/5INjqkS1o8h1imAzPqGZBb",
+                id: "5INjqkS1o8h1imAzPqGZBb",
+                name: "Tame Impala"
+              }
+            ],
+            played_at: "2016-12-13T20:44:04.589Z",
+            id: "509d30cJOPYF8J6WVpcZtx"
+          }
+        },
+        {
+          track: {
+            artists: [
+              {
+                external_urls: {
+                  spotify:
+                    "https://open.spotify.com/artist/1mMjwoytmHP5dTJbIQxN4V"
+                },
+                href:
+                  "https://api.spotify.com/v1/artists/1mMjwoytmHP5dTJbIQxN4V",
+                id: "1mMjwoytmHP5dTJbIQxN4V",
+                name: "ILL Bill",
+                type: "artist",
+                uri: "spotify:artist:1mMjwoytmHP5dTJbIQxN4V"
+              },
+              {
+                external_urls: {
+                  spotify:
+                    "https://open.spotify.com/artist/7h8ja4JSORo2sXJPmCXRxa"
+                },
+                href:
+                  "https://api.spotify.com/v1/artists/7h8ja4JSORo2sXJPmCXRxa",
+                id: "7h8ja4JSORo2sXJPmCXRxa",
+                name: "Immortal Technique",
+                type: "artist",
+                uri: "spotify:artist:7h8ja4JSORo2sXJPmCXRxa"
+              },
+              {
+                external_urls: {
+                  spotify:
+                    "https://open.spotify.com/artist/6p9q2PEuRNRMIXy0mxtDaf"
+                },
+                href:
+                  "https://api.spotify.com/v1/artists/6p9q2PEuRNRMIXy0mxtDaf",
+                id: "6p9q2PEuRNRMIXy0mxtDaf",
+                name: "Max Cavalera",
+                type: "artist",
+                uri: "spotify:artist:6p9q2PEuRNRMIXy0mxtDaf"
+              }
+            ],
+            played_at: "2019-02-22T20:44:04.589Z",
+            id: "0pzKMdjWnQRd7SoHnhV7EO"
+          }
+        }
+      ]
+    };
+    // Itterate through objects in result from spotify history
+    for (res in spotres.items) {
+      // console.log(spotres.items[res]);
+      let song = spotres.items[res].track;
+      // console.log(song.artists[0].id);
+      let artist = song.artists;
+      var artistFull = "";
+      for (entry in artist) {
+        // console.log(artist[entry].name)
+        if (artistFull === "") {
+          artistFull += artist[entry].name;
+        } else {
+          artistFull += ", " + artist[entry].name;
+        }
+      }
+      // console.log(artistFull);
 
-    var getAudioFeatures = spotify
-      .request("https://api.spotify.com/v1/audio-features/" + id)
-      .then(data => {
-        console.log("Spotify data: ", data);
-        songObj["energy"] = data.energy;
-        songObj["danceability"] = data.danceability;
-        songObj["valence"] = data.valence;
-        songObj["songID"] = data.id;
+      let songObj = {};
+      spotres["userID"] = userID;
+      let playedSong = song["played_at"];
+      let firedate = timestampHandler(playedSong);
 
-        // let register = db.collection("Music").add(songObj);
-        return data;
-      })
-      .catch(err => {
-        console.error("Error occurred: " + err);
-        return err;
-      });
+      songObj["timestamp"] = firedate.timestamp;
+      songObj["weekday"] = firedate.weekday;
+      songObj["week"] = firedate.week;
+      songObj["id"] = song["id"];
+      songObj["userID"] = userID;
+      songObj["artist"] = artistFull;
 
-    var getTrack = spotify
-      .request("https://api.spotify.com/v1/tracks/" + id)
-      .then(data => {
-        console.log("Spotify track data: ", data);
-        songObj["title"] = data.name;
-        // console.log(data.artists[0].name);
-        songObj["artist"] = data.artists[0].name;
-        //  console.log(Object.keys(data.artists[0]).length);
-        //  for (artist in data.artists[0]) {
-        //     console.log("found artist: " + artist.name);
-        //     console.log("which has obj: " + data.artists[0][artist])
-        //  }
-        // console.log("After track: ", songObj);
-        return data;
-      })
-      .catch(err => {
-        console.error("Error occurred: " + err);
-        return err;
-      });
-
-    Promise.all([getSpotifyID, getAudioFeatures, getTrack]).then(values => {
-      console.log("Result from promise: ", values);
-      // eslint-disable-next-line promise/no-nesting
-      db.collection("Music")
-        .add(songObj)
-        .then(docRef => {
-          console.log("Adding this: ", songObj);
-          console.log("Document written with ID: ", docRef.id);
-          // console.log("With content: ", docRef);
-          return docRef;
-        })
-        .catch(error => {
-          console.error("Error adding document: ", error);
-          return error;
-        });
-    });
+      // Call promise handler to inititate promise funcs
+      promise(songObj);
+    }
   });
 // Function for querying music collection
 exports.getMusic = functions.https.onRequest((req, res) => {
