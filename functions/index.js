@@ -303,6 +303,22 @@ exports.registerMusic = functions.firestore
         }
       ]
     };
+
+    spotify
+      .request("https://api.spotify.com/v1/tracks/" + id)
+      .then(data => {
+        console.log("Spotify track data: ", data);
+        let songObj = {};
+        songObj["title"] = data.name;
+        // songObj["artist"] = data.artists[0].name;
+        resolve(songObj);
+        return songObj;
+      })
+      .catch(err => {
+        console.error("Error occurred: " + err);
+        reject(err);
+        return err;
+      });
     // Itterate through objects in result from spotify history
     for (res in spotres.items) {
       // console.log(spotres.items[res]);
@@ -935,6 +951,50 @@ exports.getMusicWeek = functions.https.onRequest((req, res) => {
         });
       return res.status(200).json({
         WeekFound: result
+      });
+    }
+  });
+});
+
+exports.tempMusic = functions.https.onRequest((req, res) => {
+  const musicObj = req.body;
+
+  cors(req, res, () => {
+    let promises = [];
+    if (req.method !== "POST") {
+      return res.status(420).json({
+        message: "Only POST allowed"
+      });
+    } else {
+      var resObj = {};
+      for (items in musicObj.items) {
+        console.log(musicObj.items[items].track);
+        let trackObj = musicObj.items[items].track;
+        let dataObj = {};
+        const getUser = req.query.userID;
+        const getTime = req.query.timestamp;
+        dataObj["userID"] = getUser;
+        dataObj["timestamp"] = timestampHandler(getTime).timestamp;
+        Object.assign(dataObj, trackObj);
+        let collection = "TempMusic";
+        // let setDoc = db.collection(collection).doc(getUser).set(data);
+        // eslint-disable-next-line no-loop-func
+        var register = new Promise(resolve => {
+          promises.push(register);
+          db.collection(collection)
+            .add(dataObj)
+            // eslint-disable-next-line no-loop-func
+            .then(ref => {
+              console.log("Added document with ID: ", ref.id);
+              Object.assign(resObj, dataObj);
+              resolve();
+            });
+        });
+      }
+      Promise.all(promises).then(() => {
+        return res.status(200).json({
+          DataAdded: resObj
+        });
       });
     }
   });
