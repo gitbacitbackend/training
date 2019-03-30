@@ -150,6 +150,8 @@ exports.registerMusic = functions.firestore
           })
           .catch(err => {
             console.log("Error getting document", err);
+            reject(err);
+            return err;
           });
       });
     }
@@ -205,9 +207,9 @@ exports.registerMusic = functions.firestore
     @param {object} staticObj - object in JSON format with values to be inserted in database
     */
     function promise(staticObj) {
-      console.log(staticObj.id);
+      // console.log(staticObj.id);
       Promise.all([
-        getSpotifyID(),
+        // getSpotifyID(),
         getAudioFeatures(staticObj.id),
         getTrack(staticObj.id)
       ]).then(result => {
@@ -305,66 +307,75 @@ exports.registerMusic = functions.firestore
     //   ]
     // };
     var spotres = [];
-
-    let getStoredMusic = db
-      .collection("TempMusic")
-      .where("userID", "==", userID);
-    getStoredMusic
-      .get()
-      .then(querySnapshot => {
-        querySnapshot.forEach(doc => {
-          // doc.data() is never undefined for query doc snapshots
-          console.log(doc.id, " => ", doc.data());
-          console.log("Document data:", doc.data());
-          spotres.push(doc.data());
-          return doc.data();
-        });
-      })
-      .then(() => {
-        console.log(spotres);
-        // Itterate through objects in result from spotify history
-        // for (res in spotres.items) {
-        //   // console.log(spotres.items[res]);
-        //   let song = spotres.items[res].track;
-        //   // console.log(song.artists[0].id);
-        for (res in spotres) {
-          // console.log(spotres.items[res]);
-          let song = spotres[res];
-          // console.log(song.artists[0].id);
-          console.log(song.name);
-          let artist = song.artists;
-          var artistFull = "";
-          for (entry in artist) {
-            // console.log(artist[entry].name)
-            if (artistFull === "") {
-              artistFull += artist[entry].name;
-            } else {
-              artistFull += ", " + artist[entry].name;
-            }
-          }
-          console.log(artistFull);
-
-          let songObj = {};
-          // spotres["userID"] = userID;
-          // let playedSong = song["played_at"];
-          let firedate = song["timestamp"];
-          let fireweek = song["week"];
-          let fireday = song["weekday"];
-
-          songObj["timestamp"] = firedate;
-          songObj["weekday"] = fireday;
-          songObj["week"] = fireweek;
-          songObj["id"] = song["id"];
-          songObj["userID"] = userID;
-          songObj["artist"] = artistFull;
-
-          // Call promise handler to inititate promise funcs
-          promise(songObj);
-        }
-      })
-      .catch(err => {
-        console.log("Error getting document", err);
+    function getSongs() {
+      return new Promise((resolve, reject) => {
+        let getStoredMusic = db
+          .collection("TempMusic")
+          .where("userID", "==", userID);
+        getStoredMusic
+          .get()
+          .then(querySnapshot => {
+            querySnapshot.forEach(doc => {
+              // doc.data() is never undefined for query doc snapshots
+              console.log(doc.id, " => ", doc.data());
+              // console.log("Document data:", doc.data());
+              spotres.push(doc.data());
+              return doc.data();
+            });
+          })
+          .then(() => {
+            resolve();
+          })
+          .catch(err => {
+            console.log("Error getting document", err);
+            reject(err);
+            return err;
+          });
       });
+    }
+    getSongs().then(() => {
+      console.log(spotres);
+      // Itterate through objects in result from spotify history
+      // for (res in spotres.items) {
+      //   // console.log(spotres.items[res]);
+      //   let song = spotres.items[res].track;
+      //   // console.log(song.artists[0].id);
+      for (res in spotres) {
+        // console.log(spotres.items[res]);
+        let song = spotres[res];
+        // console.log(song.artists[0].id);
+        console.log(song.name);
+        let artist = song.artists;
+        var artistFull = "";
+        for (entry in artist) {
+          // console.log(artist[entry].name)
+          if (artistFull === "") {
+            artistFull += artist[entry].name;
+          } else {
+            artistFull += ", " + artist[entry].name;
+          }
+        }
+        console.log(artistFull);
+
+        let songObj = {};
+        // spotres["userID"] = userID;
+        // let playedSong = song["played_at"];
+        let firedate = song["timestamp"];
+        let fireweek = song["week"];
+        let fireday = song["weekday"];
+
+        songObj["timestamp"] = firedate;
+        songObj["weekday"] = fireday;
+        songObj["week"] = fireweek;
+        songObj["id"] = song["id"];
+        songObj["userID"] = userID;
+        songObj["artist"] = artistFull;
+
+        console.log("Full obj", songObj);
+        // Call promise handler to inititate promise funcs
+        promise(songObj);
+      }
+    });
   });
 // Function for querying music collection
 exports.getMusic = functions.https.onRequest((req, res) => {
