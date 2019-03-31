@@ -126,7 +126,7 @@ exports.registerMusic = functions.firestore
     // access a particular field as you would any JS property
     let userID = newValue.userID;
     let songs = "";
-
+    let deleteSongs = [];
     // Spotify identifyer information and new object to use for calls
     var spotify = new Spotify({
       id: "462be484f8f245d896aa9ebb64ffa482",
@@ -166,7 +166,7 @@ exports.registerMusic = functions.firestore
     */
     function getAudioFeatures(id) {
       return new Promise((resolve, reject) => {
-        console.log("Started getTrack");
+        console.log("Started audio features analysis");
         spotify
           .request("https://api.spotify.com/v1/audio-features?ids=" + id)
           .then(data => {
@@ -269,7 +269,7 @@ exports.registerMusic = functions.firestore
               console.log(doc.id, " => ", doc.data());
               // console.log("Document data:", doc.data());
               // spotres.push(doc.data());
-
+              deleteSongs.push(doc.id);
               // promise(res[item]);
 
               if (songs === "") {
@@ -364,15 +364,15 @@ exports.registerMusic = functions.firestore
     Promise.all([getSongs()]).then(res => {
       // eslint-disable-next-line promise/no-nesting
       getAudioFeatures(songs).then(audioFeatures => {
-        console.log(songs);
-        console.log("Songs:> ", res);
-        console.log(res[0]);
+        // console.log(songs);
+        // console.log("Songs:> ", res);
+        // console.log(res[0]);
         let tracks = res[0];
         // console.log(audioFeatures);
         for (item in audioFeatures) {
           var dataObj = {};
 
-          console.log(audioFeatures[item]);
+          // console.log(audioFeatures[item]);
           Object.assign(dataObj, audioFeatures[item], tracks[item]);
           // console.log(res[0].item.toString());
           // Object.assign(songObj, res[item], audioFeatures[item]);
@@ -382,10 +382,10 @@ exports.registerMusic = functions.firestore
             .add(dataObj)
             // eslint-disable-next-line no-loop-func
             .then(docRef => {
-              console.log("Adding this: ", dataObj);
+              // console.log("Adding this: ", dataObj);
               console.log("Document written with ID: ", docRef.id);
               // console.log("With content: ", docRef);
-              return docRef;
+              // return docRef;
             })
             // eslint-disable-next-line no-loop-func
             .catch(error => {
@@ -393,7 +393,13 @@ exports.registerMusic = functions.firestore
               return error;
             });
         }
-        console.log(dataObj);
+        // console.log(dataObj);
+        for (item in deleteSongs) {
+          // console.log("DELETING:> ", item, " or ", deleteSongs[item]);
+          db.collection("TempMusic")
+            .doc(deleteSongs[item])
+            .delete();
+        }
         //   for (item in tracks) {
         //     console.log(tracks[item]);
         //     Object.assign(dataObj, audioFeatures[item], tracks[item]);
