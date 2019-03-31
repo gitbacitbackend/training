@@ -114,7 +114,6 @@ exports.registerMood = functions.https.onRequest((req, res) => {
 // [START basic_wildcard]
 // Listen for creation of documents in the 'mood' collection
 // Initiate spotify call from here
-
 exports.registerMusic = functions.firestore
   // .runWith(runtimeOpts)
   .document("Mood/{userID}")
@@ -253,6 +252,7 @@ exports.registerMusic = functions.firestore
       });
     }
 
+    // Promise for gettings songs form temp music collection.
     function getSongs() {
       return new Promise((resolve, reject) => {
         var spotres = [];
@@ -361,6 +361,7 @@ exports.registerMusic = functions.firestore
     //   songArr = res;
     // });
 
+    // Promise resolving getSongs then handle the data from both getters. Resolve on adding merged item to database.
     Promise.all([getSongs()]).then(res => {
       // eslint-disable-next-line promise/no-nesting
       getAudioFeatures(songs).then(audioFeatures => {
