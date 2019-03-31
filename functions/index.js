@@ -13,6 +13,10 @@ admin.initializeApp(functions.config().firebase);
 
 var db = admin.firestore();
 
+const runtimeOpts = {
+  timeoutSeconds: 300,
+  memory: "1GB"
+};
 const BEGINTIME = "T00:00:00";
 const ENDTIME = "T23:59:59";
 // Take the text parameter passed to this HTTP endpoint and insert it into the
@@ -112,6 +116,7 @@ exports.registerMood = functions.https.onRequest((req, res) => {
 // Initiate spotify call from here
 
 exports.registerMusic = functions.firestore
+  // .runWith(runtimeOpts)
   .document("Mood/{userID}")
   .onCreate((snap, context) => {
     // Get an object representing the document
@@ -120,13 +125,13 @@ exports.registerMusic = functions.firestore
 
     // access a particular field as you would any JS property
     let userID = newValue.userID;
+    let songs = "";
 
     // Spotify identifyer information and new object to use for calls
     var spotify = new Spotify({
-      id: "dd688945254743afbb40e5d9cf00ad11",
-      secret: "16a2d6653a9e4d55a0108bc156a829a6"
+      id: "462be484f8f245d896aa9ebb64ffa482",
+      secret: "b6b6d1b122ed4f2b8ae0ea1c1a826c1f"
     });
-
     let query = db.collection("users").doc(userID);
 
     /* Function for database call to get user information
@@ -161,14 +166,17 @@ exports.registerMusic = functions.firestore
     */
     function getAudioFeatures(id) {
       return new Promise((resolve, reject) => {
+        console.log("Started getTrack");
         spotify
-          .request("https://api.spotify.com/v1/audio-features/" + id)
+          .request("https://api.spotify.com/v1/audio-features?ids=" + id)
           .then(data => {
             console.log("Spotify data: ", data);
             let songObj = {};
-            songObj["energy"] = data.energy;
-            songObj["danceability"] = data.danceability;
-            songObj["valence"] = data.valence;
+            // songObj["energy"] = data.energy;
+            // songObj["danceability"] = data.danceability;
+            // songObj["valence"] = data.valence;
+            // console.log(songObj);
+            Object.assign(songObj, data.audio_features);
             resolve(songObj);
             return songObj;
           })
@@ -185,6 +193,8 @@ exports.registerMusic = functions.firestore
     */
     function getTrack(id) {
       return new Promise((resolve, reject) => {
+        console.log("Started shit");
+
         spotify
           .request("https://api.spotify.com/v1/tracks/" + id)
           .then(data => {
@@ -208,6 +218,8 @@ exports.registerMusic = functions.firestore
     */
     function promise(staticObj) {
       // console.log(staticObj.id);
+      console.log("Promises reached", staticObj.id);
+
       Promise.all([
         // getSpotifyID(),
         getAudioFeatures(staticObj.id),
@@ -240,75 +252,12 @@ exports.registerMusic = functions.firestore
           });
       });
     }
-    // var spotres = {
-    //   items: [
-    //     {
-    //       track: {
-    //         artists: [
-    //           {
-    //             external_urls: {
-    //               spotify:
-    //                 "https://open.spotify.com/artist/5INjqkS1o8h1imAzPqGZBb"
-    //             },
-    //             href:
-    //               "https://api.spotify.com/v1/artists/5INjqkS1o8h1imAzPqGZBb",
-    //             id: "5INjqkS1o8h1imAzPqGZBb",
-    //             name: "Tame Impala"
-    //           }
-    //         ],
-    //         played_at: "2016-12-13T20:44:04.589Z",
-    //         id: "509d30cJOPYF8J6WVpcZtx"
-    //       }
-    //     },
-    //     {
-    //       track: {
-    //         artists: [
-    //           {
-    //             external_urls: {
-    //               spotify:
-    //                 "https://open.spotify.com/artist/1mMjwoytmHP5dTJbIQxN4V"
-    //             },
-    //             href:
-    //               "https://api.spotify.com/v1/artists/1mMjwoytmHP5dTJbIQxN4V",
-    //             id: "1mMjwoytmHP5dTJbIQxN4V",
-    //             name: "ILL Bill",
-    //             type: "artist",
-    //             uri: "spotify:artist:1mMjwoytmHP5dTJbIQxN4V"
-    //           },
-    //           {
-    //             external_urls: {
-    //               spotify:
-    //                 "https://open.spotify.com/artist/7h8ja4JSORo2sXJPmCXRxa"
-    //             },
-    //             href:
-    //               "https://api.spotify.com/v1/artists/7h8ja4JSORo2sXJPmCXRxa",
-    //             id: "7h8ja4JSORo2sXJPmCXRxa",
-    //             name: "Immortal Technique",
-    //             type: "artist",
-    //             uri: "spotify:artist:7h8ja4JSORo2sXJPmCXRxa"
-    //           },
-    //           {
-    //             external_urls: {
-    //               spotify:
-    //                 "https://open.spotify.com/artist/6p9q2PEuRNRMIXy0mxtDaf"
-    //             },
-    //             href:
-    //               "https://api.spotify.com/v1/artists/6p9q2PEuRNRMIXy0mxtDaf",
-    //             id: "6p9q2PEuRNRMIXy0mxtDaf",
-    //             name: "Max Cavalera",
-    //             type: "artist",
-    //             uri: "spotify:artist:6p9q2PEuRNRMIXy0mxtDaf"
-    //           }
-    //         ],
-    //         played_at: "2019-02-22T20:44:04.589Z",
-    //         id: "0pzKMdjWnQRd7SoHnhV7EO"
-    //       }
-    //     }
-    //   ]
-    // };
-    var spotres = [];
+
     function getSongs() {
       return new Promise((resolve, reject) => {
+        var spotres = [];
+        let songObj = {};
+
         let getStoredMusic = db
           .collection("TempMusic")
           .where("userID", "==", userID);
@@ -319,12 +268,31 @@ exports.registerMusic = functions.firestore
               // doc.data() is never undefined for query doc snapshots
               console.log(doc.id, " => ", doc.data());
               // console.log("Document data:", doc.data());
+              // spotres.push(doc.data());
+
+              // promise(res[item]);
+
+              if (songs === "") {
+                songs += doc.get("id");
+              } else {
+                songs += "," + doc.get("id");
+              }
               spotres.push(doc.data());
+              // Object.assign(songObj, doc.data());
+
               return doc.data();
             });
           })
           .then(() => {
-            resolve();
+            // console.log("resolved", spotres[0]);
+            // console.log("resolved 2", spotres[1]);
+            // console.log("resolved 3", spotres[2]);
+            // for (item in spotres) {
+            //   Object.assign(songObj, spotres[item]);
+            //   console.log(spotres[item]);
+            // }
+            // console.log(spotres);
+            resolve(spotres);
           })
           .catch(err => {
             console.log("Error getting document", err);
@@ -333,50 +301,127 @@ exports.registerMusic = functions.firestore
           });
       });
     }
-    getSongs().then(() => {
-      console.log(spotres);
-      // Itterate through objects in result from spotify history
-      // for (res in spotres.items) {
-      //   // console.log(spotres.items[res]);
-      //   let song = spotres.items[res].track;
-      //   // console.log(song.artists[0].id);
-      for (res in spotres) {
-        // console.log(spotres.items[res]);
-        let song = spotres[res];
-        // console.log(song.artists[0].id);
-        console.log(song.name);
-        let artist = song.artists;
-        var artistFull = "";
-        for (entry in artist) {
-          // console.log(artist[entry].name)
-          if (artistFull === "") {
-            artistFull += artist[entry].name;
-          } else {
-            artistFull += ", " + artist[entry].name;
-          }
+    // getSongs().then(() => {
+    //   console.log(spotres);
+    //   // Itterate through objects in result from spotify history
+    //   // for (res in spotres.items) {
+    //   //   // console.log(spotres.items[res]);
+    //   //   let song = spotres.items[res].track;
+    //   //   // console.log(song.artists[0].id);
+    //   for (res in spotres) {
+    //     // console.log(spotres.items[res]);
+    //     let song = spotres[res];
+    //     // console.log(song.artists[0].id);
+    //     console.log(song.name);
+    //     let artist = song.artists;
+    //     var artistFull = "";
+    //     for (entry in artist) {
+    //       // console.log(artist[entry].name)
+    //       if (artistFull === "") {
+    //         artistFull += artist[entry].name;
+    //       } else {
+    //         artistFull += ", " + artist[entry].name;
+    //       }
+    //     }
+    //     console.log(artistFull);
+
+    //     let songObj = {};
+    //     // spotres["userID"] = userID;
+    //     // let playedSong = song["played_at"];
+    //     let firedate = song["timestamp"];
+    //     let fireweek = song["week"];
+    //     let fireday = song["weekday"];
+
+    //     songObj["timestamp"] = firedate;
+    //     songObj["weekday"] = fireday;
+    //     songObj["week"] = fireweek;
+    //     songObj["id"] = song["id"];
+    //     songObj["userID"] = userID;
+    //     songObj["artist"] = artistFull;
+
+    //     console.log("Full obj", songObj);
+    //     // Call promise handler to inititate promise funcs
+    //     promise(songObj);
+    //   }
+    // });
+    var songArr = [];
+    var songObj = {};
+
+    // getSongs().then(res => {
+    //   for (item in res) {
+    //     console.log("Starting promise with: ", res[item]);
+    //     // promise(res[item]);
+
+    //     if (songs === "") {
+    //       songs += res[item].id;
+    //     } else {
+    //       songs += "," + res[item].id;
+    //     }
+    //   }
+    //   songArr = res;
+    // });
+
+    Promise.all([getSongs()]).then(res => {
+      // eslint-disable-next-line promise/no-nesting
+      getAudioFeatures(songs).then(audioFeatures => {
+        console.log(songs);
+        console.log("Songs:> ", res);
+        console.log(res[0]);
+        let tracks = res[0];
+        // console.log(audioFeatures);
+        for (item in audioFeatures) {
+          var dataObj = {};
+
+          console.log(audioFeatures[item]);
+          Object.assign(dataObj, audioFeatures[item], tracks[item]);
+          // console.log(res[0].item.toString());
+          // Object.assign(songObj, res[item], audioFeatures[item]);
+          // console.log(songObj);
+          // eslint-disable-next-line promise/no-nesting
+          db.collection("Music")
+            .add(dataObj)
+            // eslint-disable-next-line no-loop-func
+            .then(docRef => {
+              console.log("Adding this: ", dataObj);
+              console.log("Document written with ID: ", docRef.id);
+              // console.log("With content: ", docRef);
+              return docRef;
+            })
+            // eslint-disable-next-line no-loop-func
+            .catch(error => {
+              console.error("Error adding document: ", error);
+              return error;
+            });
         }
-        console.log(artistFull);
+        console.log(dataObj);
+        //   for (item in tracks) {
+        //     console.log(tracks[item]);
+        //     Object.assign(dataObj, audioFeatures[item], tracks[item]);
+        //   }
+        //   console.log(dataObj);
+        // });
 
-        let songObj = {};
-        // spotres["userID"] = userID;
-        // let playedSong = song["played_at"];
-        let firedate = song["timestamp"];
-        let fireweek = song["week"];
-        let fireday = song["weekday"];
+        // .then(() => {
+        //   // eslint-disable-next-line promise/no-nesting
+        //   db.collection("Music")
+        //     .add(songObj)
+        //     .then(docRef => {
+        //       console.log("Adding this: ", songObj);
+        //       console.log("Document written with ID: ", docRef.id);
+        //       // console.log("With content: ", docRef);
+        //       return docRef;
+        //     })
+        //     .catch(error => {
+        //       console.error("Error adding document: ", error);
+        //       return error;
+        //     });
 
-        songObj["timestamp"] = firedate;
-        songObj["weekday"] = fireday;
-        songObj["week"] = fireweek;
-        songObj["id"] = song["id"];
-        songObj["userID"] = userID;
-        songObj["artist"] = artistFull;
-
-        console.log("Full obj", songObj);
-        // Call promise handler to inititate promise funcs
-        promise(songObj);
-      }
+        //   // promise();
+        // });
+      });
     });
   });
+
 // Function for querying music collection
 exports.getMusic = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
