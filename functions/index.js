@@ -373,14 +373,36 @@ exports.registerMusic = functions.firestore
         for (item in audioFeatures) {
           var dataObj = {};
 
+          let songObj = {};
+          songObj["energy"] = audioFeatures[item].energy;
+          songObj["danceability"] = audioFeatures[item].danceability;
+          songObj["valence"] = audioFeatures[item].valence;
           // console.log(audioFeatures[item]);
-          Object.assign(dataObj, audioFeatures[item], tracks[item]);
+          // Object.assign(dataObj, audioFeatures[item], tracks[item]);
+          let artists = tracks[item].artists;
+          let artistFull = "";
+          for (artist in artists) {
+            if (artistFull === "") {
+              artistFull += artists[artist].name;
+            } else {
+              artistFull += ", " + artists[artist].name;
+            }
+          }
+          songObj.artist = artistFull;
+          songObj.title = tracks[item].name;
+          songObj.timestamp = tracks[item].timestamp;
+          songObj.userID = tracks[item].userID;
+          songObj.id = tracks[item].id;
+          songObj.week = tracks[item].week;
+          songObj.weekday = tracks[item].weekday;
+          // console.log(artistFull);
+          // Object.assign(dataObj, songObj, tracks[item]);
           // console.log(res[0].item.toString());
           // Object.assign(songObj, res[item], audioFeatures[item]);
           // console.log(songObj);
           // eslint-disable-next-line promise/no-nesting
           db.collection("Music")
-            .add(dataObj)
+            .add(songObj)
             // eslint-disable-next-line no-loop-func
             .then(docRef => {
               // console.log("Adding this: ", dataObj);
@@ -896,9 +918,16 @@ function timestampHandler(timestamp, type) {
     }
   } else {
     let fullTime = {};
-    fullTime["timestamp"] = firedate = admin.firestore.Timestamp.fromDate(
-      new Date(timestamp)
-    );
+    // console.log(typeof timestamp);
+    if (typeof timestamp === "number") {
+      fullTime["timestamp"] = firedate = admin.firestore.Timestamp.fromMillis(
+        timestamp
+      );
+    } else {
+      fullTime["timestamp"] = firedate = admin.firestore.Timestamp.fromDate(
+        new Date(timestamp)
+      );
+    }
     fullTime["weekday"] = weekday = moment(firedate.toDate()).isoWeekday();
     fullTime["week"] = week = moment(firedate.toDate()).isoWeek();
     return fullTime;
@@ -1034,18 +1063,20 @@ exports.getMusicWeek = functions.https.onRequest((req, res) => {
 });
 
 exports.tempMusic = functions.https.onRequest((req, res) => {
-  const musicObj = req.body;
-  console.log(musicObj);
+  // const musicObj = req.body;
+  // console.log(musicObj);
   //      '[{"accountentityid":"19_1148996738","createddate":1551192350631,"id":"1551192350631_4is6Z7ZZkQKxezliMAVah7","entityid":"19_1148996738_1551192350631_4is6Z7ZZkQKxezliMAVah7","track":{"accountentityid":"19_1148996738","album":{"accountentityid":"19_1148996738","artists":[{"accountentityid":"19_1148996738","entityid":"19_1148996738_2WMIMX93pQyfyAF2J2r1ID","id":"2WMIMX93pQyfyAF2J2r1ID","link":"https://open.spotify.com/artist/2WMIMX93pQyfyAF2J2r1ID","name":"Veorra"}],"availablemarkets":["AD","AE","AR","AT","AU","BE","BG","BH","BO","BR","CA","CH","CL","CO","CR","CY","CZ","DE","DK","DO","DZ","EC","EE","EG","ES","FI","FR","GB","GR","GT","HK","HN","HU","ID","IE","IL","IS","IT","JO","JP","KW","LB","LI","LT","LU","LV","MA","MC","MT","MX","MY","NI","NL","NO","NZ","OM","PA","PE","PH","PL","PS","PT","PY","QA","RO","SA","SE","SG","SK","SV","TH","TN","TR","TW","US","UY","VN","ZA"],"entityid":"19_1148996738_6HRMpuoLWFpYL8BO5CqymH","id":"6HRMpuoLWFpYL8BO5CqymH","link":"https://open.spotify.com/album/6HRMpuoLWFpYL8BO5CqymH","name":"Sapphire","releasedate":1440115200000,"resources":[{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":640,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/261e600721ddc40b2f3b84fd629e9df28bb4e967","width":640},{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":300,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/3e050a546b1e3c9f52897a18ccf97ca7f8d343ef","width":300},{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":64,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/39431f632d04624a69a136daac6263af80cb97b6","width":64}],"type":"album"},"artists":[{"accountentityid":"19_1148996738","entityid":"19_1148996738_2WMIMX93pQyfyAF2J2r1ID","followerscount":61263,"genres":["bass trap","tracestep","traprun"],"id":"2WMIMX93pQyfyAF2J2r1ID","link":"https://open.spotify.com/artist/2WMIMX93pQyfyAF2J2r1ID","name":"Veorra","popularity":55,"resources":[{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":1000,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/66b775bc2361a03832acce4a48b236942b4b210d","width":1000},{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":640,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/05067af75d758ee2474a5b2c9ca00c0b218d09c8","width":640},{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":200,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/3467b7d8fe3998f34a0e94d511722c99f7601541","width":200},{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":64,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/662a56bd962533eaaf1a686dd067bfe737a0b21d","width":64}]}],"availablemarkets":["AD","AE","AR","AT","AU","BE","BG","BH","BO","BR","CA","CH","CL","CO","CR","CY","CZ","DE","DK","DO","DZ","EC","EE","EG","ES","FI","FR","GB","GR","GT","HK","HN","HU","ID","IE","IL","IS","IT","JO","JP","KW","LB","LI","LT","LU","LV","MA","MC","MT","MX","MY","NI","NL","NO","NZ","OM","PA","PE","PH","PL","PS","PT","PY","QA","RO","SA","SE","SG","SK","SV","TH","TN","TR","TW","US","UY","VN","ZA"],"discnumber":1,"duration":233142,"entityid":"19_1148996738_4is6Z7ZZkQKxezliMAVah7","explicit":false,"id":"4is6Z7ZZkQKxezliMAVah7","link":"https://open.spotify.com/track/4is6Z7ZZkQKxezliMAVah7","name":"Standby","number":2,"popularity":52,"resources":[{"duration":30000,"mimetype":"audio/mp3","type":2,"url":"https://p.scdn.co/mp3-preview/5b6dbb36d5243614d9139eb6525f9496bbeee803?cid=8f62e65c31d74c15b9c8129505694ee1"}]}},{"accountentityid":"19_1148996738","createddate":1551192130710,"id":"1551192130710_7b7mtUwxYqTCPsxBvfzbd2","entityid":"19_1148996738_1551192130710_7b7mtUwxYqTCPsxBvfzbd2","track":{"accountentityid":"19_1148996738","album":{"accountentityid":"19_1148996738","artists":[{"accountentityid":"19_1148996738","entityid":"19_1148996738_7w9jdhcgHNdiPeNPUoFSlx","id":"7w9jdhcgHNdiPeNPUoFSlx","link":"https://open.spotify.com/artist/7w9jdhcgHNdiPeNPUoFSlx","name":"Dropkick Murphys"}],"availablemarkets":["AD","AE","AR","AT","AU","BE","BG","BH","BO","BR","CA","CH","CL","CO","CR","CY","CZ","DE","DK","DO","DZ","EC","EE","EG","ES","FI","FR","GB","GR","GT","HK","HN","HU","ID","IE","IL","IS","IT","JO","JP","KW","LB","LI","LT","LU","LV","MA","MC","MT","MX","MY","NI","NL","NO","NZ","OM","PA","PE","PH","PL","PS","PT","PY","QA","RO","SA","SE","SG","SK","SV","TH","TN","TR","TW","US","UY","VN","ZA"],"entityid":"19_1148996738_6jGmS4aaYHvyRhKzACeQij","id":"6jGmS4aaYHvyRhKzACeQij","link":"https://open.spotify.com/album/6jGmS4aaYHvyRhKzACeQij","name":"The Meanest of Times","releasedate":1189987200000,"resources":[{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":640,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/83028d677106bc08a84665796c197b1c606aa"}]}}}]'
 
-  var bodeh = {
-    data: [
-      '[{"accountentityid":"19_1148996738","createddate":1551192350631,"id":"1551192350631_4is6Z7ZZkQKxezliMAVah7","entityid":"19_1148996738_1551192350631_4is6Z7ZZkQKxezliMAVah7","track":{"accountentityid":"19_1148996738","album":{"accountentityid":"19_1148996738","artists":[{"accountentityid":"19_1148996738","entityid":"19_1148996738_2WMIMX93pQyfyAF2J2r1ID","id":"2WMIMX93pQyfyAF2J2r1ID","link":"https://open.spotify.com/artist/2WMIMX93pQyfyAF2J2r1ID","name":"Veorra"}],"availablemarkets":["AD","AE","AR","AT","AU","BE","BG","BH","BO","BR","CA","CH","CL","CO","CR","CY","CZ","DE","DK","DO","DZ","EC","EE","EG","ES","FI","FR","GB","GR","GT","HK","HN","HU","ID","IE","IL","IS","IT","JO","JP","KW","LB","LI","LT","LU","LV","MA","MC","MT","MX","MY","NI","NL","NO","NZ","OM","PA","PE","PH","PL","PS","PT","PY","QA","RO","SA","SE","SG","SK","SV","TH","TN","TR","TW","US","UY","VN","ZA"],"entityid":"19_1148996738_6HRMpuoLWFpYL8BO5CqymH","id":"6HRMpuoLWFpYL8BO5CqymH","link":"https://open.spotify.com/album/6HRMpuoLWFpYL8BO5CqymH","name":"Sapphire","releasedate":1440115200000,"resources":[{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":640,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/261e600721ddc40b2f3b84fd629e9df28bb4e967","width":640},{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":300,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/3e050a546b1e3c9f52897a18ccf97ca7f8d343ef","width":300},{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":64,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/39431f632d04624a69a136daac6263af80cb97b6","width":64}],"type":"album"},"artists":[{"accountentityid":"19_1148996738","entityid":"19_1148996738_2WMIMX93pQyfyAF2J2r1ID","followerscount":61263,"genres":["bass trap","tracestep","traprun"],"id":"2WMIMX93pQyfyAF2J2r1ID","link":"https://open.spotify.com/artist/2WMIMX93pQyfyAF2J2r1ID","name":"Veorra","popularity":55,"resources":[{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":1000,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/66b775bc2361a03832acce4a48b236942b4b210d","width":1000},{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":640,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/05067af75d758ee2474a5b2c9ca00c0b218d09c8","width":640},{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":200,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/3467b7d8fe3998f34a0e94d511722c99f7601541","width":200},{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":64,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/662a56bd962533eaaf1a686dd067bfe737a0b21d","width":64}]}],"availablemarkets":["AD","AE","AR","AT","AU","BE","BG","BH","BO","BR","CA","CH","CL","CO","CR","CY","CZ","DE","DK","DO","DZ","EC","EE","EG","ES","FI","FR","GB","GR","GT","HK","HN","HU","ID","IE","IL","IS","IT","JO","JP","KW","LB","LI","LT","LU","LV","MA","MC","MT","MX","MY","NI","NL","NO","NZ","OM","PA","PE","PH","PL","PS","PT","PY","QA","RO","SA","SE","SG","SK","SV","TH","TN","TR","TW","US","UY","VN","ZA"],"discnumber":1,"duration":233142,"entityid":"19_1148996738_4is6Z7ZZkQKxezliMAVah7","explicit":false,"id":"4is6Z7ZZkQKxezliMAVah7","link":"https://open.spotify.com/track/4is6Z7ZZkQKxezliMAVah7","name":"Standby","number":2,"popularity":52,"resources":[{"duration":30000,"mimetype":"audio/mp3","type":2,"url":"https://p.scdn.co/mp3-preview/5b6dbb36d5243614d9139eb6525f9496bbeee803?cid=8f62e65c31d74c15b9c8129505694ee1"}]}},{"accountentityid":"19_1148996738","createddate":1551192130710,"id":"1551192130710_7b7mtUwxYqTCPsxBvfzbd2","entityid":"19_1148996738_1551192130710_7b7mtUwxYqTCPsxBvfzbd2","track":{"accountentityid":"19_1148996738","album":{"accountentityid":"19_1148996738","artists":[{"accountentityid":"19_1148996738","entityid":"19_1148996738_7w9jdhcgHNdiPeNPUoFSlx","id":"7w9jdhcgHNdiPeNPUoFSlx","link":"https://open.spotify.com/artist/7w9jdhcgHNdiPeNPUoFSlx","name":"Dropkick Murphys"}],"availablemarkets":["AD","AE","AR","AT","AU","BE","BG","BH","BO","BR","CA","CH","CL","CO","CR","CY","CZ","DE","DK","DO","DZ","EC","EE","EG","ES","FI","FR","GB","GR","GT","HK","HN","HU","ID","IE","IL","IS","IT","JO","JP","KW","LB","LI","LT","LU","LV","MA","MC","MT","MX","MY","NI","NL","NO","NZ","OM","PA","PE","PH","PL","PS","PT","PY","QA","RO","SA","SE","SG","SK","SV","TH","TN","TR","TW","US","UY","VN","ZA"],"entityid":"19_1148996738_6jGmS4aaYHvyRhKzACeQij","id":"6jGmS4aaYHvyRhKzACeQij","link":"https://open.spotify.com/album/6jGmS4aaYHvyRhKzACeQij","name":"The Meanest of Times","releasedate":1189987200000,"resources":[{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":640,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/83028d677106bc08a84665796c197b1c606aa"}]}}}]'
-    ]
-  };
-  var obj = JSON.parse(bodeh.data);
-  console.log(obj[0]);
-  console.log(obj);
+  // let body =
+  // '[{"accountentityid":"19_1148996738","createddate":1551192350631,"id":"1551192350631_4is6Z7ZZkQKxezliMAVah7","entityid":"19_1148996738_1551192350631_4is6Z7ZZkQKxezliMAVah7","track":{"accountentityid":"19_1148996738","album":{"accountentityid":"19_1148996738","artists":[{"accountentityid":"19_1148996738","entityid":"19_1148996738_2WMIMX93pQyfyAF2J2r1ID","id":"2WMIMX93pQyfyAF2J2r1ID","link":"https://open.spotify.com/artist/2WMIMX93pQyfyAF2J2r1ID","name":"Veorra"}],"availablemarkets":["AD","AE","AR","AT","AU","BE","BG","BH","BO","BR","CA","CH","CL","CO","CR","CY","CZ","DE","DK","DO","DZ","EC","EE","EG","ES","FI","FR","GB","GR","GT","HK","HN","HU","ID","IE","IL","IS","IT","JO","JP","KW","LB","LI","LT","LU","LV","MA","MC","MT","MX","MY","NI","NL","NO","NZ","OM","PA","PE","PH","PL","PS","PT","PY","QA","RO","SA","SE","SG","SK","SV","TH","TN","TR","TW","US","UY","VN","ZA"],"entityid":"19_1148996738_6HRMpuoLWFpYL8BO5CqymH","id":"6HRMpuoLWFpYL8BO5CqymH","link":"https://open.spotify.com/album/6HRMpuoLWFpYL8BO5CqymH","name":"Sapphire","releasedate":1440115200000,"resources":[{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":640,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/261e600721ddc40b2f3b84fd629e9df28bb4e967","width":640},{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":300,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/3e050a546b1e3c9f52897a18ccf97ca7f8d343ef","width":300},{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":64,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/39431f632d04624a69a136daac6263af80cb97b6","width":64}],"type":"album"},"artists":[{"accountentityid":"19_1148996738","entityid":"19_1148996738_2WMIMX93pQyfyAF2J2r1ID","followerscount":61263,"genres":["bass trap","tracestep","traprun"],"id":"2WMIMX93pQyfyAF2J2r1ID","link":"https://open.spotify.com/artist/2WMIMX93pQyfyAF2J2r1ID","name":"Veorra","popularity":55,"resources":[{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":1000,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/66b775bc2361a03832acce4a48b236942b4b210d","width":1000},{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":640,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/05067af75d758ee2474a5b2c9ca00c0b218d09c8","width":640},{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":200,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/3467b7d8fe3998f34a0e94d511722c99f7601541","width":200},{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":64,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/662a56bd962533eaaf1a686dd067bfe737a0b21d","width":64}]}],"availablemarkets":["AD","AE","AR","AT","AU","BE","BG","BH","BO","BR","CA","CH","CL","CO","CR","CY","CZ","DE","DK","DO","DZ","EC","EE","EG","ES","FI","FR","GB","GR","GT","HK","HN","HU","ID","IE","IL","IS","IT","JO","JP","KW","LB","LI","LT","LU","LV","MA","MC","MT","MX","MY","NI","NL","NO","NZ","OM","PA","PE","PH","PL","PS","PT","PY","QA","RO","SA","SE","SG","SK","SV","TH","TN","TR","TW","US","UY","VN","ZA"],"discnumber":1,"duration":233142,"entityid":"19_1148996738_4is6Z7ZZkQKxezliMAVah7","explicit":false,"id":"4is6Z7ZZkQKxezliMAVah7","link":"https://open.spotify.com/track/4is6Z7ZZkQKxezliMAVah7","name":"Standby","number":2,"popularity":52,"resources":[{"duration":30000,"mimetype":"audio/mp3","type":2,"url":"https://p.scdn.co/mp3-preview/5b6dbb36d5243614d9139eb6525f9496bbeee803?cid=8f62e65c31d74c15b9c8129505694ee1"}]}},{"accountentityid":"19_1148996738","createddate":1551192350631,"id":"1551192350631_4is6Z7ZZkQKxezliMAVah7","entityid":"19_1148996738_1551192350631_4is6Z7ZZkQKxezliMAVah7","track":{"accountentityid":"19_1148996738","album":{"accountentityid":"19_1148996738","artists":[{"accountentityid":"19_1148996738","entityid":"19_1148996738_2WMIMX93pQyfyAF2J2r1ID","id":"2WMIMX93pQyfyAF2J2r1ID","link":"https://open.spotify.com/artist/2WMIMX93pQyfyAF2J2r1ID","name":"Veorra"}],"availablemarkets":["AD","AE","AR","AT","AU","BE","BG","BH","BO","BR","CA","CH","CL","CO","CR","CY","CZ","DE","DK","DO","DZ","EC","EE","EG","ES","FI","FR","GB","GR","GT","HK","HN","HU","ID","IE","IL","IS","IT","JO","JP","KW","LB","LI","LT","LU","LV","MA","MC","MT","MX","MY","NI","NL","NO","NZ","OM","PA","PE","PH","PL","PS","PT","PY","QA","RO","SA","SE","SG","SK","SV","TH","TN","TR","TW","US","UY","VN","ZA"],"entityid":"19_1148996738_6HRMpuoLWFpYL8BO5CqymH","id":"6HRMpuoLWFpYL8BO5CqymH","link":"https://open.spotify.com/album/6HRMpuoLWFpYL8BO5CqymH","name":"Sapphire","releasedate":1440115200000,"resources":[{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":640,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/261e600721ddc40b2f3b84fd629e9df28bb4e967","width":640},{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":300,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/3e050a546b1e3c9f52897a18ccf97ca7f8d343ef","width":300},{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":64,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/39431f632d04624a69a136daac6263af80cb97b6","width":64}],"type":"album"},"artists":[{"accountentityid":"19_1148996738","entityid":"19_1148996738_2WMIMX93pQyfyAF2J2r1ID","followerscount":61263,"genres":["bass trap","tracestep","traprun"],"id":"2WMIMX93pQyfyAF2J2r1ID","link":"https://open.spotify.com/artist/2WMIMX93pQyfyAF2J2r1ID","name":"Veorra","popularity":55,"resources":[{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":1000,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/66b775bc2361a03832acce4a48b236942b4b210d","width":1000},{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":640,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/05067af75d758ee2474a5b2c9ca00c0b218d09c8","width":640},{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":200,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/3467b7d8fe3998f34a0e94d511722c99f7601541","width":200},{"aspectratio":{"accuracy":100,"actual":"1:1","closest":"1:1"},"height":64,"mimetype":"application/octet-stream","type":0,"url":"https://i.scdn.co/image/662a56bd962533eaaf1a686dd067bfe737a0b21d","width":64}]}],"availablemarkets":["AD","AE","AR","AT","AU","BE","BG","BH","BO","BR","CA","CH","CL","CO","CR","CY","CZ","DE","DK","DO","DZ","EC","EE","EG","ES","FI","FR","GB","GR","GT","HK","HN","HU","ID","IE","IL","IS","IT","JO","JP","KW","LB","LI","LT","LU","LV","MA","MC","MT","MX","MY","NI","NL","NO","NZ","OM","PA","PE","PH","PL","PS","PT","PY","QA","RO","SA","SE","SG","SK","SV","TH","TN","TR","TW","US","UY","VN","ZA"],"discnumber":1,"duration":233142,"entityid":"19_1148996738_4is6Z7ZZkQKxezliMAVah7","explicit":false,"id":"4is6Z7ZZkQKxezliMAVah7","link":"https://open.spotify.com/track/4is6Z7ZZkQKxezliMAVah7","name":"Standby","number":2,"popularity":52,"resources":[{"duration":30000,"mimetype":"audio/mp3","type":2,"url":"https://p.scdn.co/mp3-preview/5b6dbb36d5243614d9139eb6525f9496bbeee803?cid=8f62e65c31d74c15b9c8129505694ee1"}]}}]';
+  let musicObj = req.body;
+  console.log(musicObj);
+  // var musicObj = JSON.parse(body);
+  // var musicObj = obj[0];
+  // console.log(obj[0]);
+  // console.log(obj);
+  console.log(musicObj);
+  // console.log(musicObj);
   cors(req, res, () => {
     let promises = [];
     if (req.method !== "POST") {
@@ -1054,12 +1085,15 @@ exports.tempMusic = functions.https.onRequest((req, res) => {
       });
     } else {
       var resObj = {};
-      for (items in musicObj.items) {
-        console.log(musicObj.items[items].track);
-        let trackObj = musicObj.items[items].track;
+      for (items in musicObj) {
+        console.log(items);
+        console.log(musicObj[items]);
+        console.log(musicObj[items].track);
+        let trackObj = musicObj[items].track;
         let dataObj = {};
         const getUser = req.query.userID;
-        const getTime = req.query.timestamp;
+        // const getTime = req.query.timestamp;
+        const getTime = musicObj[items].createddate;
         let time = timestampHandler(getTime);
         dataObj["userID"] = getUser;
         dataObj["timestamp"] = time.timestamp;
