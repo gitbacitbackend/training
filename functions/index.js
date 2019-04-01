@@ -78,8 +78,12 @@ exports.jsonMessage = functions.https.onRequest((req, res) => {
 exports.registerMood = functions.https.onRequest((req, res) => {
   // const getMood = req.query.mood;
   // const getUser = req.query.user;
-  const getData = req.body;
+  let getData = req.body;
   // cors wrapper for cross platform(app) access
+  let time = timestampHandler(getData.timestamp);
+  getData.timestamp = time.timestamp;
+  getData.week = time.week;
+  getData.weekday = time.weekday;
   cors(req, res, () => {
     if (req.method !== "POST") {
       return res.status(420).json({
@@ -1075,7 +1079,7 @@ exports.tempMusic = functions.https.onRequest((req, res) => {
   // var musicObj = obj[0];
   // console.log(obj[0]);
   // console.log(obj);
-  console.log(musicObj);
+  // console.log(musicObj);
   // console.log(musicObj);
   cors(req, res, () => {
     let promises = [];
@@ -1086,9 +1090,9 @@ exports.tempMusic = functions.https.onRequest((req, res) => {
     } else {
       var resObj = {};
       for (items in musicObj) {
-        console.log(items);
+        // console.log(items);
         console.log(musicObj[items]);
-        console.log(musicObj[items].track);
+        // console.log(musicObj[items].track);
         let trackObj = musicObj[items].track;
         let dataObj = {};
         const getUser = req.query.userID;
@@ -1121,5 +1125,30 @@ exports.tempMusic = functions.https.onRequest((req, res) => {
         });
       });
     }
+  });
+});
+
+exports.deleteCollection = functions.https.onRequest((req, res) => {
+  let deletions = [];
+  db.collection(req.query.collection)
+    .get()
+    .then(snapshot => {
+      snapshot.forEach(doc => {
+        console.log(doc.id);
+        deletions.push(doc.id);
+      });
+    })
+    .then(() => {
+      for (doc in deletions) {
+        db.collection(req.query.collection)
+          .doc(deletions[doc])
+          .delete();
+      }
+    })
+    .catch(err => {
+      console.log("Error getting documents", err);
+    });
+  return res.status(200).json({
+    Deleted: "all docs"
   });
 });
