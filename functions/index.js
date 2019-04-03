@@ -966,16 +966,18 @@ exports.getMusicWeek = functions.https.onRequest((req, res) => {
             //  console.log(date2);
             console.log(weekday);
             console.log(week);
+            console.log(" ");
             //let dayum = 1;
 
-            /*      
-           do {
-            sum += parseInt(doc.get("Valence"));
-            console.log("sum er:", sum)
-            dayum ++;
-           }
-            while( counter === day)  
-         */
+            for( i = 0; i < 7; i++ ){
+              sum += parseInt(doc.get("Valence"));
+              console.log("Summert valence: ", sum);
+              console.log("day ID: " + day);
+              valenceAvg = (sum/day);
+              console.log("Avrage valence: " + valenceAvg);
+              console.log(" ");
+            }   
+            
           });
           return null;
         })
@@ -1087,3 +1089,4 @@ exports.deleteCollection = functions.https.onRequest((req, res) => {
     Deleted: "all docs"
   });
 });
+
