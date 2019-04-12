@@ -1083,9 +1083,13 @@ exports.tempDigiMe = functions.https.onRequest((req, res) => {
   //console.log(req.body.data);
   let obj = req.body.data;
 
-  console.log(obj);
-  var DigiObj = JSON.parse({obj});
-  console.log(DigiObj);
+  console.log("OBJECT BEFORE", obj);
+  console.log(Object.keys(obj).length);
+  for(entry in obj){
+    console.log(JSON.parse(obj[entry]));
+    }
+  var DigiObj = JSON.parse(obj);
+  console.log("AFTER", DigiObj);
 
   cors(req, res, () => {
     let promises = [];
