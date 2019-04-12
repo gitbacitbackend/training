@@ -1141,3 +1141,59 @@ exports.tempDigiMe = functions.https.onRequest((req, res) => {
     }
   });
 });
+
+
+exports.tempData = functions.https.onRequest((req, res) => {
+  //  console.log(req.body.data);
+    let obj = req.body.data;
+  
+    console.log(obj);
+    var digiObj = JSON.parse(obj[0]);
+    console.log("after parse: ", digiObj);
+  
+    cors(req, res, () => {
+      let promises = [];
+      if (req.method !== "POST") {
+        return res.status(420).json({
+          message: "Only POST allowed"
+        });
+      } else {
+        var resObj = {};
+        for (items in digiObj) {
+         // let oneDataItem = digiObj[items];
+        //  console.log(digiObj[items]);
+        //  let trackObj = digiObj[items].track;
+          let displayItem = digiObj[items].social.firstname;
+          console.log("navnet er:", displayItem);
+          let dataObj = {};
+         // const getUser = req.query.userID;
+        //  const getTime = digiObj[items].createddate;
+       //   let time = timestampHandler(getTime);
+        //  dataObj["userID"] = getUser;
+       //   dataObj["timestamp"] = time.timestamp;
+        //  dataObj["week"] = time.week;
+        //  dataObj["weekday"] = time.weekday;
+          dataObj["mjeas"] = "yes";
+          Object.assign(dataObj, displayItem);
+          let collection = "TempData";
+          // eslint-disable-next-line no-loop-func
+          var register = new Promise(resolve => {
+            promises.push(register);
+            db.collection(collection)
+              .add(dataObj)
+              // eslint-disable-next-line no-loop-func
+              .then(ref => {
+                console.log("Added document with ID: ", ref.id);
+                Object.assign(resObj, dataObj);
+                resolve();
+              });
+          });
+        }
+        Promise.all(promises).then(() => {
+          return res.status(200).json({
+            DataAdded: resObj
+          });
+        });
+      }
+    });
+  });
