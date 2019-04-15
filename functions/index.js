@@ -1146,7 +1146,23 @@ exports.tempDigiMe = functions.https.onRequest((req, res) => {
           });
         });
       } else if (DigiObj.fitbit) {
-        // Registrer i fitbit database
+        var fitbitObj = DigiObj.fitbit;
+        for (items in fitbitObj) {
+          console.log(fitbitObj[items]);
+          let collection = "TempFitBit";
+          // eslint-disable-next-line no-loop-func
+          var registerFit = new Promise(resolve => {
+            promises.push(registerFit);
+            db.collection(collection)
+              .add(fitbitObj[items])
+              // eslint-disable-next-line no-loop-func
+              .then(ref => {
+                console.log("Added document with ID: ", ref.id);
+                // Object.assign(resObj, fitbitObj[items]);
+                resolve();
+              });
+          });
+        }
       }
     }
   });
