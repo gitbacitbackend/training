@@ -969,15 +969,14 @@ exports.getMusicWeek = functions.https.onRequest((req, res) => {
             console.log(" ");
             //let dayum = 1;
 
-            for( i = 0; i < 7; i++ ){
+            for (i = 0; i < 7; i++) {
               sum += parseInt(doc.get("Valence"));
               console.log("Summert valence: ", sum);
               console.log("day ID: " + day);
-              valenceAvg = (sum/day);
+              valenceAvg = sum / day;
               console.log("Avrage valence: " + valenceAvg);
               console.log(" ");
-            }   
-            
+            }
           });
           return null;
         })
@@ -1082,14 +1081,20 @@ exports.deleteCollection = functions.https.onRequest((req, res) => {
 exports.tempDigiMe = functions.https.onRequest((req, res) => {
   //console.log(req.body.data);
   let obj = req.body.data;
-
   console.log("OBJECT BEFORE", obj);
-  console.log(Object.keys(obj).length);
-  for(entry in obj){
+  console.log("Object lenght", Object.keys(obj).length);
+  console.log("last Object", obj[obj.length - 1]);
+  var DigiObj = {};
+  for (entry in obj) {
     console.log(JSON.parse(obj[entry]));
-    }
-  var DigiObj = JSON.parse(obj);
+    Object.assign(DigiObj, JSON.parse(obj[entry]));
+  }
+  // for (const key of Object.keys(obj)) {
+  //   console.log(key, obj[key]);
+  // }
+  // var DigiObj = JSON.parse(obj);
   console.log("AFTER", DigiObj);
+  // console.log(DigiObj.length);
 
   cors(req, res, () => {
     let promises = [];
@@ -1098,84 +1103,30 @@ exports.tempDigiMe = functions.https.onRequest((req, res) => {
         message: "Only POST allowed"
       });
     } else {
-      var resObj = {};
-      for (items in DigiObj) {
-        // console.log(items);
-        let oneSong = DigiObj[items];
-        // console.log(oneSong);
-        // console.log(items);
-        //console.log(DigiObj[items]);
-        // console.log(MusicObj[0][items]);
-
-        // console.log(MusicObj[items].track);
-    let trackObj = DigiObj[items].track;
-        let dataObj = {};
-        const getUser = req.query.userID;
-        // const getTime = req.query.timestamp;
-        const getTime = DigiObj[items].createddate;
-        let time = timestampHandler(getTime);
-        dataObj["userID"] = getUser;
-        dataObj["timestamp"] = time.timestamp;
-        dataObj["week"] = time.week;
-        dataObj["weekday"] = time.weekday;
-        Object.assign(dataObj, trackObj);
-        let collection = "TempDigiMe";
-        // eslint-disable-next-line no-loop-func
-        var register = new Promise(resolve => {
-          promises.push(register);
-          db.collection(collection)
-            .add(dataObj)
-            // eslint-disable-next-line no-loop-func
-            .then(ref => {
-              console.log("Added document with ID: ", ref.id);
-              Object.assign(resObj, dataObj);
-              resolve();
-            });
-        });
-      }
-      Promise.all(promises).then(() => {
-        return res.status(200).json({
-          DataAdded: "ok"
-        });
-      });
-    }
-  });
-});
-
-
-exports.tempData = functions.https.onRequest((req, res) => {
-  //  console.log(req.body.data);
-    let obj = req.body.data;
-  
-    console.log(obj);
-    var digiObj = JSON.parse(obj[0]);
-    console.log("after parse: ", digiObj);
-  
-    cors(req, res, () => {
-      let promises = [];
-      if (req.method !== "POST") {
-        return res.status(420).json({
-          message: "Only POST allowed"
-        });
-      } else {
+      if (DigiObj.spotify) {
         var resObj = {};
-        for (items in digiObj) {
-         // let oneDataItem = digiObj[items];
-        //  console.log(digiObj[items]);
-        //  let trackObj = digiObj[items].track;
-          let displayItem = digiObj[items].social.firstname;
-          console.log("navnet er:", displayItem);
+        var spotifyObj = DigiObj.spotify;
+        for (items in spotifyObj) {
+          // console.log(items);
+          let oneSong = spotifyObj[items];
+          // console.log(oneSong);
+          // console.log(items);
+          //console.log(DigiObj[items]);
+          // console.log(MusicObj[0][items]);
+
+          // console.log(MusicObj[items].track);
+          let trackObj = spotifyObj[items].track;
           let dataObj = {};
-         // const getUser = req.query.userID;
-        //  const getTime = digiObj[items].createddate;
-       //   let time = timestampHandler(getTime);
-        //  dataObj["userID"] = getUser;
-       //   dataObj["timestamp"] = time.timestamp;
-        //  dataObj["week"] = time.week;
-        //  dataObj["weekday"] = time.weekday;
-          dataObj["mjeas"] = "yes";
-          Object.assign(dataObj, displayItem);
-          let collection = "TempData";
+          const getUser = req.query.userID;
+          // const getTime = req.query.timestamp;
+          const getTime = spotifyObj[items].createddate;
+          let time = timestampHandler(getTime);
+          dataObj["userID"] = getUser;
+          dataObj["timestamp"] = time.timestamp;
+          dataObj["week"] = time.week;
+          dataObj["weekday"] = time.weekday;
+          Object.assign(dataObj, trackObj);
+          let collection = "TempDigiMe";
           // eslint-disable-next-line no-loop-func
           var register = new Promise(resolve => {
             promises.push(register);
@@ -1191,9 +1142,67 @@ exports.tempData = functions.https.onRequest((req, res) => {
         }
         Promise.all(promises).then(() => {
           return res.status(200).json({
-            DataAdded: resObj
+            DataAdded: "ok"
           });
         });
+      } else if (DigiObj.fitbit) {
+        // Registrer i fitbit database
       }
-    });
+    }
   });
+});
+
+exports.tempData = functions.https.onRequest((req, res) => {
+  //  console.log(req.body.data);
+  let obj = req.body.data;
+
+  console.log(obj);
+  var digiObj = JSON.parse(obj[0]);
+  console.log("after parse: ", digiObj);
+
+  cors(req, res, () => {
+    let promises = [];
+    if (req.method !== "POST") {
+      return res.status(420).json({
+        message: "Only POST allowed"
+      });
+    } else {
+      var resObj = {};
+      for (items in digiObj) {
+        // let oneDataItem = digiObj[items];
+        //  console.log(digiObj[items]);
+        //  let trackObj = digiObj[items].track;
+        let displayItem = digiObj[items].social.firstname;
+        console.log("navnet er:", displayItem);
+        let dataObj = {};
+        // const getUser = req.query.userID;
+        //  const getTime = digiObj[items].createddate;
+        //   let time = timestampHandler(getTime);
+        //  dataObj["userID"] = getUser;
+        //   dataObj["timestamp"] = time.timestamp;
+        //  dataObj["week"] = time.week;
+        //  dataObj["weekday"] = time.weekday;
+        dataObj["mjeas"] = "yes";
+        Object.assign(dataObj, displayItem);
+        let collection = "TempData";
+        // eslint-disable-next-line no-loop-func
+        var register = new Promise(resolve => {
+          promises.push(register);
+          db.collection(collection)
+            .add(dataObj)
+            // eslint-disable-next-line no-loop-func
+            .then(ref => {
+              console.log("Added document with ID: ", ref.id);
+              Object.assign(resObj, dataObj);
+              resolve();
+            });
+        });
+      }
+      Promise.all(promises).then(() => {
+        return res.status(200).json({
+          DataAdded: resObj
+        });
+      });
+    }
+  });
+});
