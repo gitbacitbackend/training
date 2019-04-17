@@ -292,7 +292,71 @@ exports.registerMusic = functions.firestore
           });
       });
     }
+    var deleteFitbit = [];
+    function getFitbit() {
+      var fitRes = [];
+      return new Promise((resolve, reject) => {
+        let getFitbit = db
+          .collection("TempFitBit")
+          .where("userID", "==", userID);
+        getFitbit
+          .get()
+          .then(querySnapshot => {
+            querySnapshot.forEach(doc => {
+              deleteFitbit.push(doc.id);
+              fitRes.push(doc.data());
+            });
+          })
+          .then(() => {
+            resolve(fitRes);
+          })
+          .catch(err => {
+            console.log("Error getting document", err);
+            reject(err);
+            return err;
+          });
+      });
+    }
 
+    Promise.all([getFitbit()]).then(res => {
+      console.log(res);
+      res = res[0];
+      console.log(res);
+      for (item in res) {
+        let dataObj = {};
+        console.log(res[item]);
+        let fitObj = res[item];
+        dataObj.activityname = fitObj.activityname;
+        dataObj.calories = fitObj.calories;
+        let time = timestampHandler(fitObj.createddate);
+        dataObj.timestamp = time.timestamp;
+        dataObj.week = time.week;
+        dataObj.weekday = time.weekday;
+        dataObj.steps = fitObj.steps;
+
+        // eslint-disable-next-line promise/no-nesting
+        db.collection("Fitbit")
+          .add(dataObj)
+          // eslint-disable-next-line no-loop-func
+          .then(docRef => {
+            // console.log("Adding this: ", dataObj);
+            console.log("Fitbit Document written with ID: ", docRef.id);
+            // console.log("With content: ", docRef);
+            // return docRef;
+          })
+          // eslint-disable-next-line no-loop-func
+          .catch(error => {
+            console.error("Error adding document: ", error);
+            return error;
+          });
+      }
+      for (item in deleteFitbit) {
+        // console.log("DELETING:> ", item, " or ", deleteSongs[item]);
+        db.collection("TempFitBit")
+          .doc(deleteFitbit[item])
+          .delete();
+      }
+    });
     // Promise resolving getSongs then handle the data from both getters. Resolve on adding merged item to database.
     Promise.all([getSongs()]).then(res => {
       // eslint-disable-next-line promise/no-nesting
@@ -336,7 +400,7 @@ exports.registerMusic = functions.firestore
             // eslint-disable-next-line no-loop-func
             .then(docRef => {
               // console.log("Adding this: ", dataObj);
-              console.log("Document written with ID: ", docRef.id);
+              console.log("Spotify Document written with ID: ", docRef.id);
               // console.log("With content: ", docRef);
               // return docRef;
             })
@@ -1081,9 +1145,9 @@ exports.deleteCollection = functions.https.onRequest((req, res) => {
 exports.tempDigiMe = functions.https.onRequest((req, res) => {
   //console.log(req.body.data);
   let obj = req.body.data;
-  console.log("OBJECT BEFORE", obj);
-  console.log("Object lenght", Object.keys(obj).length);
-  console.log("last Object", obj[obj.length - 1]);
+  // console.log("OBJECT BEFORE", obj);
+  // console.log("Object lenght", Object.keys(obj).length);
+  // console.log("last Object", obj[obj.length - 1]);
   var DigiObj = {};
   for (entry in obj) {
     console.log(JSON.parse(obj[entry]));
@@ -1148,7 +1212,7 @@ exports.tempDigiMe = functions.https.onRequest((req, res) => {
       } else if (DigiObj.fitbit) {
         var fitbitObj = DigiObj.fitbit;
         for (items in fitbitObj) {
-          console.log(fitbitObj[items]);
+          // console.log(fitbitObj[items]);
           let collection = "TempFitBit";
           // eslint-disable-next-line no-loop-func
           var registerFit = new Promise(resolve => {
