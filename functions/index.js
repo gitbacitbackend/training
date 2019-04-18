@@ -1037,66 +1037,6 @@ exports.getMusicWeek = functions.https.onRequest((req, res) => {
   });
 });
 
-exports.tempMusic = functions.https.onRequest((req, res) => {
-  console.log(req.body.data);
-  let obj = req.body.data;
-
-  console.log(obj);
-  var MusicObj = JSON.parse(obj);
-  console.log(MusicObj);
-
-  cors(req, res, () => {
-    let promises = [];
-    if (req.method !== "POST") {
-      return res.status(420).json({
-        message: "Only POST allowed"
-      });
-    } else {
-      var resObj = {};
-      for (items in MusicObj) {
-        // console.log(items);
-        let oneSong = MusicObj[items];
-        // console.log(oneSong);
-        // console.log(items);
-        console.log(MusicObj[items]);
-        // console.log(MusicObj[0][items]);
-
-        // console.log(MusicObj[items].track);
-        let trackObj = MusicObj[items].track;
-        let dataObj = {};
-        const getUser = req.query.userID;
-        // const getTime = req.query.timestamp;
-        const getTime = MusicObj[items].createddate;
-        let time = timestampHandler(getTime);
-        dataObj["userID"] = getUser;
-        dataObj["timestamp"] = time.timestamp;
-        dataObj["week"] = time.week;
-        dataObj["weekday"] = time.weekday;
-        Object.assign(dataObj, trackObj);
-        let collection = "TempMusic";
-        // let setDoc = db.collection(collection).doc(getUser).set(data);
-        // eslint-disable-next-line no-loop-func
-        var register = new Promise(resolve => {
-          promises.push(register);
-          db.collection(collection)
-            .add(dataObj)
-            // eslint-disable-next-line no-loop-func
-            .then(ref => {
-              console.log("Added document with ID: ", ref.id);
-              Object.assign(resObj, dataObj);
-              resolve();
-            });
-        });
-      }
-      Promise.all(promises).then(() => {
-        return res.status(200).json({
-          DataAdded: resObj
-        });
-      });
-    }
-  });
-});
-
 exports.deleteCollection = functions.https.onRequest((req, res) => {
   let deletions = [];
   let incomming = 0;
@@ -1226,13 +1166,14 @@ exports.tempDigiMe = functions.https.onRequest((req, res) => {
 });
 
 exports.tempData = functions.https.onRequest((req, res) => {
-  //  console.log(req.body.data);
   let obj = req.body.data;
 
-  console.log(obj);
-  var digiObj = JSON.parse(obj[0]);
-  console.log("after parse: ", digiObj);
-
+  var DigiObj = {};
+  for (entry in obj) {
+    console.log(JSON.parse(obj[entry]));
+    Object.assign(DigiObj, JSON.parse(obj[entry]));
+  }
+ 
   cors(req, res, () => {
     let promises = [];
     if (req.method !== "POST") {
@@ -1240,42 +1181,25 @@ exports.tempData = functions.https.onRequest((req, res) => {
         message: "Only POST allowed"
       });
     } else {
-      var resObj = {};
-      for (items in digiObj) {
-        // let oneDataItem = digiObj[items];
-        //  console.log(digiObj[items]);
-        //  let trackObj = digiObj[items].track;
-        let displayItem = digiObj[items].social.firstname;
-        console.log("navnet er:", displayItem);
         let dataObj = {};
-        // const getUser = req.query.userID;
-        //  const getTime = digiObj[items].createddate;
-        //   let time = timestampHandler(getTime);
-        //  dataObj["userID"] = getUser;
-        //   dataObj["timestamp"] = time.timestamp;
-        //  dataObj["week"] = time.week;
-        //  dataObj["weekday"] = time.weekday;
-        dataObj["mjeas"] = "yes";
-        Object.assign(dataObj, displayItem);
+        const getUser = req.query.userID;
+        dataObj["userID"] = getUser;     
         let collection = "TempData";
-        // eslint-disable-next-line no-loop-func
         var register = new Promise(resolve => {
           promises.push(register);
           db.collection(collection)
-            .add(dataObj)
-            // eslint-disable-next-line no-loop-func
+            .add(DigiObj)
             .then(ref => {
               console.log("Added document with ID: ", ref.id);
-              Object.assign(resObj, dataObj);
+              Object.assign(dataObj);
               resolve();
             });
         });
       }
       Promise.all(promises).then(() => {
         return res.status(200).json({
-          DataAdded: resObj
+          DataAdded: "ok"
         });
       });
-    }
-  });
-});
+     });
+   });
