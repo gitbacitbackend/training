@@ -262,7 +262,9 @@ exports.registerMusic = functions.firestore
 
         let getStoredMusic = db
           .collection("TempMusic")
-          .where("userID", "==", userID);
+          .where("userID", "==", userID)
+          .orderBy("timestamp")
+          .limit(3);
         getStoredMusic
           .get()
           .then(querySnapshot => {
@@ -326,14 +328,16 @@ exports.registerMusic = functions.firestore
         let dataObj = {};
         console.log(res[item]);
         let fitObj = res[item];
-        dataObj.activityname = fitObj.activityname;
-        dataObj.calories = fitObj.calories;
+        // dataObj.activityname = fitObj.activityname;
+
+        dataObj.calories = fitObj.caloriesout;
         let time = timestampHandler(fitObj.createddate);
         dataObj.timestamp = time.timestamp;
         dataObj.week = time.week;
         dataObj.weekday = time.weekday;
         dataObj.steps = fitObj.steps;
-
+        dataObj.goals = fitObj.goals;
+        dataObj.userID = fitObj.userID;
         // eslint-disable-next-line promise/no-nesting
         db.collection("Fitbit")
           .add(dataObj)
@@ -417,30 +421,6 @@ exports.registerMusic = functions.firestore
             .doc(deleteSongs[item])
             .delete();
         }
-        //   for (item in tracks) {
-        //     console.log(tracks[item]);
-        //     Object.assign(dataObj, audioFeatures[item], tracks[item]);
-        //   }
-        //   console.log(dataObj);
-        // });
-
-        // .then(() => {
-        //   // eslint-disable-next-line promise/no-nesting
-        //   db.collection("Music")
-        //     .add(songObj)
-        //     .then(docRef => {
-        //       console.log("Adding this: ", songObj);
-        //       console.log("Document written with ID: ", docRef.id);
-        //       // console.log("With content: ", docRef);
-        //       return docRef;
-        //     })
-        //     .catch(error => {
-        //       console.error("Error adding document: ", error);
-        //       return error;
-        //     });
-
-        //   // promise();
-        // });
       });
     });
   });
@@ -1119,32 +1099,42 @@ exports.tempMusic = functions.https.onRequest((req, res) => {
 
 exports.deleteCollection = functions.https.onRequest((req, res) => {
   let deletions = [];
+  let incomming = 0;
+  let deleted = 0;
   db.collection(req.query.collection)
     .get()
     .then(snapshot => {
       snapshot.forEach(doc => {
-        console.log(doc.id);
+        // console.log(doc.id);
         deletions.push(doc.id);
+        incomming++;
       });
     })
     .then(() => {
+      console.log("Deleting this many: ", incomming);
       for (doc in deletions) {
         db.collection(req.query.collection)
           .doc(deletions[doc])
           .delete();
+        deleted++;
       }
+    })
+    .then(() => {
+      console.log("Deleted this many: ", deleted);
+      return res.status(200).json({
+        Deleted: deleted,
+        Incomming: incomming
+      });
     })
     .catch(err => {
       console.log("Error getting documents", err);
     });
-  return res.status(200).json({
-    Deleted: "all docs"
-  });
 });
 
 exports.tempDigiMe = functions.https.onRequest((req, res) => {
   //console.log(req.body.data);
   let obj = req.body.data;
+  const getUser = req.query.userID;
   // console.log("OBJECT BEFORE", obj);
   // console.log("Object lenght", Object.keys(obj).length);
   // console.log("last Object", obj[obj.length - 1]);
@@ -1181,7 +1171,7 @@ exports.tempDigiMe = functions.https.onRequest((req, res) => {
           // console.log(MusicObj[items].track);
           let trackObj = spotifyObj[items].track;
           let dataObj = {};
-          const getUser = req.query.userID;
+          // const getUser = req.query.userID;
           // const getTime = req.query.timestamp;
           const getTime = spotifyObj[items].createddate;
           let time = timestampHandler(getTime);
@@ -1190,7 +1180,7 @@ exports.tempDigiMe = functions.https.onRequest((req, res) => {
           dataObj["week"] = time.week;
           dataObj["weekday"] = time.weekday;
           Object.assign(dataObj, trackObj);
-          let collection = "TempDigiMe";
+          let collection = "TempMusic";
           // eslint-disable-next-line no-loop-func
           var register = new Promise(resolve => {
             promises.push(register);
@@ -1213,19 +1203,22 @@ exports.tempDigiMe = functions.https.onRequest((req, res) => {
         var fitbitObj = DigiObj.fitbit;
         for (items in fitbitObj) {
           // console.log(fitbitObj[items]);
-          let collection = "TempFitBit";
-          // eslint-disable-next-line no-loop-func
-          var registerFit = new Promise(resolve => {
-            promises.push(registerFit);
-            db.collection(collection)
-              .add(fitbitObj[items])
-              // eslint-disable-next-line no-loop-func
-              .then(ref => {
-                console.log("Added document with ID: ", ref.id);
-                // Object.assign(resObj, fitbitObj[items]);
-                resolve();
-              });
-          });
+          fitbitObj[items].userID = getUser;
+          if (fitbitObj[items].caloriesout) {
+            let collection = "TempFitBit";
+            // eslint-disable-next-line no-loop-func
+            var registerFit = new Promise(resolve => {
+              promises.push(registerFit);
+              db.collection(collection)
+                .add(fitbitObj[items])
+                // eslint-disable-next-line no-loop-func
+                .then(ref => {
+                  console.log("Added document with ID: ", ref.id);
+                  // Object.assign(resObj, fitbitObj[items]);
+                  resolve();
+                });
+            });
+          }
         }
       }
     }
