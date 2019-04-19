@@ -130,6 +130,7 @@ exports.registerMusic = functions.firestore
     let userID = newValue.userID;
     let songs = "";
     let deleteSongs = [];
+    var deleteFitbit = [];
     // Spotify identifyer information and new object to use for calls
     var spotify = new Spotify({
       id: "462be484f8f245d896aa9ebb64ffa482",
@@ -169,16 +170,12 @@ exports.registerMusic = functions.firestore
     */
     function getAudioFeatures(id) {
       return new Promise((resolve, reject) => {
-        console.log("Started audio features analysis");
+        console.log("Started audio features analysis with ", songs, " : ", id);
         spotify
           .request("https://api.spotify.com/v1/audio-features?ids=" + id)
           .then(data => {
             console.log("Spotify data: ", data);
             let songObj = {};
-            // songObj["energy"] = data.energy;
-            // songObj["danceability"] = data.danceability;
-            // songObj["valence"] = data.valence;
-            // console.log(songObj);
             Object.assign(songObj, data.audio_features);
             resolve(songObj);
             return songObj;
@@ -197,7 +194,6 @@ exports.registerMusic = functions.firestore
     function getTrack(id) {
       return new Promise((resolve, reject) => {
         console.log("Started shit");
-
         spotify
           .request("https://api.spotify.com/v1/tracks/" + id)
           .then(data => {
@@ -216,55 +212,15 @@ exports.registerMusic = functions.firestore
       });
     }
 
-    /* Handle the promises from all queries and API calls
-    @param {object} staticObj - object in JSON format with values to be inserted in database
-    */
-    function promise(staticObj) {
-      // console.log(staticObj.id);
-      console.log("Promises reached", staticObj.id);
-
-      Promise.all([
-        // getSpotifyID(),
-        getAudioFeatures(staticObj.id),
-        getTrack(staticObj.id)
-      ]).then(result => {
-        console.log("Result from promise: ", result);
-
-        // result comes in form of array, itterate over and assign to object
-        let resObj = {};
-        for (index in result) {
-          Object.assign(resObj, result[index]);
-        }
-        let songObj = {};
-        Object.assign(songObj, resObj, staticObj);
-        // Add results to database
-        // eslint-disable-next-line promise/no-nesting
-        db.collection("Music")
-          .add(songObj)
-          .then(docRef => {
-            console.log("Adding this: ", songObj);
-            console.log("Document written with ID: ", docRef.id);
-            // console.log("With content: ", docRef);
-            return docRef;
-          })
-          .catch(error => {
-            console.error("Error adding document: ", error);
-            return error;
-          });
-      });
-    }
-
     // Promise for gettings songs form temp music collection.
     function getSongs() {
       return new Promise((resolve, reject) => {
         var spotres = [];
-        let songObj = {};
 
         let getStoredMusic = db
           .collection("TempMusic")
           .where("userID", "==", userID)
-          .orderBy("timestamp")
-          .limit(3);
+          .orderBy("timestamp");
         getStoredMusic
           .get()
           .then(querySnapshot => {
@@ -294,7 +250,8 @@ exports.registerMusic = functions.firestore
           });
       });
     }
-    var deleteFitbit = [];
+    /*Function for getting the fitbit objects from temp fitbit collection
+     */
     function getFitbit() {
       var fitRes = [];
       return new Promise((resolve, reject) => {
@@ -320,26 +277,30 @@ exports.registerMusic = functions.firestore
       });
     }
 
+    // Run fitbit getter and set object for adding to database
     Promise.all([getFitbit()]).then(res => {
-      console.log(res);
+      // console.log(res);
       res = res[0];
-      console.log(res);
+      // console.log(res);
       for (item in res) {
         let dataObj = {};
-        console.log(res[item]);
+        // console.log(res[item]);
         let fitObj = res[item];
         // dataObj.activityname = fitObj.activityname;
 
         dataObj.calories = fitObj.caloriesout;
-        let time = timestampHandler(fitObj.createddate);
-        dataObj.timestamp = time.timestamp;
-        dataObj.week = time.week;
-        dataObj.weekday = time.weekday;
+        dataObj.timestamp = fitObj.timestamp;
+        dataObj.week = fitObj.week;
+        dataObj.weekday = fitObj.weekday;
+        dataObj.year = fitObj.year;
         dataObj.steps = fitObj.steps;
         dataObj.goals = fitObj.goals;
         dataObj.userID = fitObj.userID;
+        let docID = fitObj.year + fitObj.week + fitObj.weekday + fitObj.userID;
+        console.log(docID);
         // eslint-disable-next-line promise/no-nesting
         db.collection("Fitbit")
+          .doc(docID)
           .add(dataObj)
           // eslint-disable-next-line no-loop-func
           .then(docRef => {
@@ -354,6 +315,7 @@ exports.registerMusic = functions.firestore
             return error;
           });
       }
+      //DELETE fitbit
       for (item in deleteFitbit) {
         // console.log("DELETING:> ", item, " or ", deleteSongs[item]);
         db.collection("TempFitBit")
@@ -368,9 +330,11 @@ exports.registerMusic = functions.firestore
         // console.log(songs);
         // console.log("Songs:> ", res);
         // console.log(res[0]);
+
         let tracks = res[0];
         // console.log(audioFeatures);
-        for (item in audioFeatures) {
+        for (item = 0; item < 3; item++) {
+          // for (item in audioFeatures) {
           let songObj = {};
           songObj["energy"] = audioFeatures[item].energy;
           songObj["danceability"] = audioFeatures[item].danceability;
@@ -393,6 +357,7 @@ exports.registerMusic = functions.firestore
           songObj.id = tracks[item].id;
           songObj.week = tracks[item].week;
           songObj.weekday = tracks[item].weekday;
+          songObj.year = tracks[item].year;
           // console.log(artistFull);
           // Object.assign(dataObj, songObj, tracks[item]);
           // console.log(res[0].item.toString());
@@ -880,6 +845,7 @@ function timestampHandler(timestamp, type) {
       );
       fullTime["weekday"] = weekday = moment(firedate.toDate()).isoWeekday();
       fullTime["week"] = week = moment(firedate.toDate()).isoWeek();
+      fullTime["year"] = week = moment(firedate.toDate()).year();
       return fullTime;
     } else {
       let fullTime = {};
@@ -888,6 +854,7 @@ function timestampHandler(timestamp, type) {
       );
       fullTime["weekday"] = weekday = moment(firedate.toDate()).isoWeekday();
       fullTime["week"] = week = moment(firedate.toDate()).isoWeek();
+      fullTime["year"] = week = moment(firedate.toDate()).year();
       return fullTime;
     }
   } else {
@@ -904,6 +871,8 @@ function timestampHandler(timestamp, type) {
     }
     fullTime["weekday"] = weekday = moment(firedate.toDate()).isoWeekday();
     fullTime["week"] = week = moment(firedate.toDate()).isoWeek();
+    fullTime["year"] = week = moment(firedate.toDate()).year();
+
     return fullTime;
   }
 
@@ -1152,6 +1121,7 @@ exports.tempDigiMe = functions.https.onRequest((req, res) => {
 
   cors(req, res, () => {
     let promises = [];
+    let fitPromises = [];
     if (req.method !== "POST") {
       return res.status(420).json({
         message: "Only POST allowed"
@@ -1179,6 +1149,7 @@ exports.tempDigiMe = functions.https.onRequest((req, res) => {
           dataObj["timestamp"] = time.timestamp;
           dataObj["week"] = time.week;
           dataObj["weekday"] = time.weekday;
+          dataObj["year"] = time.year;
           Object.assign(dataObj, trackObj);
           let collection = "TempMusic";
           // eslint-disable-next-line no-loop-func
@@ -1194,11 +1165,11 @@ exports.tempDigiMe = functions.https.onRequest((req, res) => {
               });
           });
         }
-        Promise.all(promises).then(() => {
-          return res.status(200).json({
-            DataAdded: "ok"
-          });
-        });
+        // Promise.all(promises).then(() => {
+        //   return res.status(200).json({
+        //     DataAdded: "ok"
+        //   });
+        // });
       } else if (DigiObj.fitbit) {
         var fitbitObj = DigiObj.fitbit;
         for (items in fitbitObj) {
@@ -1206,9 +1177,16 @@ exports.tempDigiMe = functions.https.onRequest((req, res) => {
           fitbitObj[items].userID = getUser;
           if (fitbitObj[items].caloriesout) {
             let collection = "TempFitBit";
+            let getTime = fitbitObj[items].createddate;
+            let time = timestampHandler(getTime);
+            fitbitObj[items]["userID"] = getUser;
+            fitbitObj[items]["timestamp"] = time.timestamp;
+            fitbitObj[items]["week"] = time.week;
+            fitbitObj[items]["weekday"] = time.weekday;
+            fitbitObj[items]["year"] = time.year;
             // eslint-disable-next-line no-loop-func
             var registerFit = new Promise(resolve => {
-              promises.push(registerFit);
+              fitPromises.push(registerFit);
               db.collection(collection)
                 .add(fitbitObj[items])
                 // eslint-disable-next-line no-loop-func
@@ -1221,6 +1199,12 @@ exports.tempDigiMe = functions.https.onRequest((req, res) => {
           }
         }
       }
+      Promise.all(fitPromises, promises).then(() => {
+        console.log("All resolved");
+        return res.status(200).json({
+          DataAdded: "ok"
+        });
+      });
     }
   });
 });
