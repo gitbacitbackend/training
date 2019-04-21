@@ -19,60 +19,6 @@ const runtimeOpts = {
 };
 const BEGINTIME = "T00:00:00";
 const ENDTIME = "T23:59:59";
-// Take the text parameter passed to this HTTP endpoint and insert it into the
-// Realtime Database under the path /messages/:pushId/original
-exports.addMessage = functions.https.onRequest((req, res) => {
-  // Grab the text parameter.
-  const original = req.query.text;
-  // Push the new message into the Realtime Database using the Firebase Admin SDK.
-  return admin
-    .database()
-    .ref("/messages")
-    .push({ original: original })
-    .then(snapshot => {
-      // Redirect with 303 SEE OTHER to the URL of the pushed object in the Firebase console.
-      return res.redirect(303, snapshot.ref.toString());
-    });
-});
-
-// Listens for new messages added to /messages/:pushId/original and creates an
-// uppercase version of the message to /messages/:pushId/uppercase
-exports.makeUppercase = functions.database
-  .ref("/messages/{pushId}/original")
-  .onCreate((snapshot, context) => {
-    // Grab the current value of what was written to the Realtime Database.
-    const original = snapshot.val();
-    console.log("Uppercasing", context.params.pushId, original);
-    const uppercase = original.toUpperCase();
-    // You must return a Promise when performing asynchronous tasks inside a Functions such as
-    // writing to the Firebase Realtime Database.
-    // Setting an "uppercase" sibling in the Realtime Database returns a Promise.
-    return snapshot.ref.parent.child("uppercase").set(uppercase);
-  });
-
-// // Create and Deploy Your First Cloud Functions
-// // https://firebase.google.com/docs/functions/write-firebase-functions
-//
-// exports.helloWorld = functions.https.onRequest((request, response) => {
-//  response.send("Hello from Firebase!");
-// });
-exports.jsonMessage = functions.https.onRequest((req, res) => {
-  // cors wrapper for cross platform(app) access
-  cors(req, res, () => {
-    const original = req.query.text;
-    //console.log('Uppercasing', context.params.pushId, original);
-    // You must return a Promise when performing asynchronous tasks inside a Functions such as
-    // writing to the Firebase Realtime Database.
-    // Setting an "uppercase" sibling in the Realtime Database returns a Promise.
-    res.status(200).json({
-      sampleTime: "1450632410296",
-      data: "76.36731:3.4651554:0.5665419",
-      text: original
-    });
-  });
-
-  //return data;
-});
 
 // Function for registering mood
 exports.registerMood = functions.https.onRequest((req, res) => {
@@ -118,7 +64,7 @@ exports.registerMood = functions.https.onRequest((req, res) => {
 // [START basic_wildcard]
 // Listen for creation of documents in the 'mood' collection
 // Initiate spotify call from here
-exports.registerMusic = functions.firestore
+exports.registerData = functions.firestore
   // .runWith(runtimeOpts)
   .document("Mood/{userID}")
   .onCreate((snap, context) => {
@@ -226,7 +172,7 @@ exports.registerMusic = functions.firestore
           .then(querySnapshot => {
             querySnapshot.forEach(doc => {
               // doc.data() is never undefined for query doc snapshots
-              console.log(doc.id, " => ", doc.data());
+              // console.log(doc.id, " => ", doc.data());
               // console.log("Document data:", doc.data());
               deleteSongs.push(doc.id);
 
@@ -296,16 +242,20 @@ exports.registerMusic = functions.firestore
         dataObj.steps = fitObj.steps;
         dataObj.goals = fitObj.goals;
         dataObj.userID = fitObj.userID;
-        let docID = fitObj.year + fitObj.week + fitObj.weekday + fitObj.userID;
-        console.log(docID);
+        let docID =
+          fitObj.year.toString() +
+          fitObj.week.toString() +
+          fitObj.weekday.toString() +
+          fitObj.userID;
+        // console.log(docID);
         // eslint-disable-next-line promise/no-nesting
         db.collection("Fitbit")
           .doc(docID)
-          .add(dataObj)
+          .set(dataObj)
           // eslint-disable-next-line no-loop-func
-          .then(docRef => {
+          .then(() => {
             // console.log("Adding this: ", dataObj);
-            console.log("Fitbit Document written with ID: ", docRef.id);
+            console.log("Fitbit Document updated or written with ID: ", docID);
             // console.log("With content: ", docRef);
             // return docRef;
           })
@@ -879,27 +829,6 @@ function timestampHandler(timestamp, type) {
   //  console.log(date2);
 }
 
-/*Function for adding hours, minutes and seconds to a date input, and returning it as UNIX timestamp
-@param {string} timestamp - timestamp in format "YYYY-MM-DD" / alternative full format: "YYYY-MM-DDTHH:MM:SS" where SS is optional
-@param {string} type - the type of request, set by the calling function
-return UNIX timestamp
-*/
-
-function unixTimestampHandler(timestamp, type) {
-  let time = "";
-  if (type === "UNIXBEGINTIME") {
-    time = "00:00:00";
-  } else if (type === "UNIXENDTIME") {
-    time = "23:59:59";
-  }
-
-  if (timestamp !== undefined && timestamp.length <= 10) {
-    return moment(timestamp + time, "YYYY/MM/DD HH:mm:ss").unix();
-  } else {
-    return new timestamp();
-  }
-}
-
 /*
 function for getting DailyMusic with UserID and DateListened where DateListened is in UNIX timestamp format
 */
@@ -1157,7 +1086,7 @@ exports.tempData = functions.https.onRequest((req, res) => {
     console.log(JSON.parse(obj[entry]));
     Object.assign(DigiObj, JSON.parse(obj[entry]));
   }
- 
+
   cors(req, res, () => {
     let promises = [];
     if (req.method !== "POST") {
@@ -1165,25 +1094,25 @@ exports.tempData = functions.https.onRequest((req, res) => {
         message: "Only POST allowed"
       });
     } else {
-        let dataObj = {};
-        const getUser = req.query.userID;
-        dataObj["userID"] = getUser;     
-        let collection = "TempData";
-        var register = new Promise(resolve => {
-          promises.push(register);
-          db.collection(collection)
-            .add(DigiObj)
-            .then(ref => {
-              console.log("Added document with ID: ", ref.id);
-              Object.assign(dataObj);
-              resolve();
-            });
-        });
-      }
-      Promise.all(promises).then(() => {
-        return res.status(200).json({
-          DataAdded: "ok"
-        });
+      let dataObj = {};
+      const getUser = req.query.userID;
+      dataObj["userID"] = getUser;
+      let collection = "TempData";
+      var register = new Promise(resolve => {
+        promises.push(register);
+        db.collection(collection)
+          .add(DigiObj)
+          .then(ref => {
+            console.log("Added document with ID: ", ref.id);
+            Object.assign(dataObj);
+            resolve();
+          });
       });
-     });
-   });
+    }
+    Promise.all(promises).then(() => {
+      return res.status(200).json({
+        DataAdded: "ok"
+      });
+    });
+  });
+});
