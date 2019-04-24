@@ -885,52 +885,142 @@ exports.getMusicWeek = functions.https.onRequest((req, res) => {
 
     if (getWeekID !== undefined) {
       let result = [];
+      let valence = [];
+      let energy = [];
+      let danceability = [];
+      let mood = [];
+      let tempmood = [];
       let sum = 0;
+      let fulldata = [];
+      let date = [];
+      let array = [{dayID: "1"}];
+      let counter = 0;
 
       let music = query
         .where("weekID", "==", getWeekID)
         .get()
         .then(snapshot => {
-          let date = "";
-          if (snapshot.emtpy) {
+          if (snapshot.empty) {
             return res.status(413).json({
               error: "No document for this weekID"
             });
           }
           snapshot.forEach(doc => {
-            result.push(doc.data());
-            date = doc.get("timestamp").toDate();
+          
+            
             day = doc.get("dayID");
+            unixTime = new Date(doc.get("timestamp")._seconds*1000);
 
-            // date2 = admin.firestore.Timestamp.fromDate(new Date(date *1000));
-            weekday = moment(date).isoWeekday();
-            week = moment(date).isoWeek();
-            //  console.log(date2);
-            console.log(weekday);
-            console.log(week);
-            console.log(" ");
-            //let dayum = 1;
+          
 
-            for (i = 0; i < 7; i++) {
-              sum += parseInt(doc.get("Valence"));
-              console.log("Summert valence: ", sum);
-              console.log("day ID: " + day);
-              valenceAvg = sum / day;
-              console.log("Avrage valence: " + valenceAvg);
-              console.log(" ");
-            }
+            year = unixTime.getFullYear();
+            month =(unixTime.getMonth()+1);
+            day = (unixTime.getDate());
+            
+            valence.push(doc.get("dayID") + ":" + doc.get("Valence"));
+            energy.push(doc.get("dayID") + ":" + doc.get("Energy"));
+            danceability.push(doc.get("dayID") + ":" + doc.get("Danceability"));
+            mood.push(doc.get("dayID")+ ":" + doc.get("Mood"));
+            date.push(doc.get("dayID")+ ":" + year + "-" + month + "-" + day);
+
+            array.forEach((item)=>{
+  
+              if(doc.get("dayID") in array){
+                return null
+              } else {
+                array.push({dayID: doc.get("dayID")})
+                counter ++;
+              }
+            })
+
+
+            console.log("COUNTER: " + counter);
+            sum++;
+            })
+           
+
+          
+
+
+          for (i = 1; i <= array.length - 1; i++) {
+            var valenceSum = 0;
+            var energySum = 0;
+            var danceabilitySum = 0;
+            var valenceAntall = 0;
+            var energyAntall = 0;
+            var danceabilityAntall = 0;
+            var tempdate = "";
+            tempmood = [];
+          
+
+            mood.forEach(item =>{
+              if(parseInt(item.split(":")[0]) === i){
+                m = item.split(":")[1];
+                tempmood.push(m);
+              }
+            });
+
+            date.forEach(item =>{
+              if(parseInt(item.split(":")[0]) === i){
+                d = item.split(":")[1];
+                tempdate = String(d);
+              }
+            });
+
+            valence.forEach(item => {
+              if (parseInt(item.split(":")[0]) === i) {
+                valenceSum = valenceSum + parseInt(item.split(":")[1]);
+                valenceAntall++;
+              }
+            });
+
+            valenceSum = valenceSum / valenceAntall;
+            var resultValence = valenceSum.toFixed(0);
+            
+            energy.forEach(item => {
+              if (parseInt(item.split(":")[0]) === i) {
+                energySum = energySum + parseInt(item.split(":")[1]);
+                energyAntall++;
+              }
+            });
+            energySum = energySum / energyAntall;
+            var resultEnergy = energySum.toFixed(0);
+            
+            var summen = 0;
+            var antall = 0;
+
+            danceability.forEach(item => {
+              if (parseInt(item.split(":")[0]) === i) {
+                danceabilitySum = danceabilitySum + parseInt(item.split(":")[1]);
+                danceabilityAntall++;
+              }
+            });
+            danceabilitySum = danceabilitySum / danceabilityAntall;
+            var resultDanceability = danceabilitySum.toFixed(0);
+
+            fulldata.push({
+              Energy: resultEnergy,
+              Danceability: resultDanceability,
+              Valence: resultValence,
+              dayID: i,
+              mood: tempmood,
+              date: tempdate,
+              });
+          }
+
+          var obj = JSON.parse(JSON.stringify(fulldata));
+
+          return res.status(200).json({
+            MusicStats: obj
           });
-          return null;
         })
+
         .catch(err => {
           let errmsg = "Error getting documents" + err;
           return res.status(416).json({
             error: errmsg
           });
         });
-      return res.status(200).json({
-        WeekFound: result
-      });
     }
   });
 });
