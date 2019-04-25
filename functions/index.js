@@ -1248,3 +1248,77 @@ exports.tempData = functions.https.onRequest((req, res) => {
     });
   });
 });
+
+
+
+exports.getFitbit = functions.https.onRequest((req, res) => {
+  cors(req, res, () => {
+
+    const getUser = req.query.userID;
+    const getWeek = req.query.weekID;
+
+    const query = db.collection("Fitbit");
+
+    // Get specific mood by user
+    if (getUser !== undefined && getWeek !== undefined) {
+      let result = [];
+      let users = query
+        .where("userID", "==", getUser)
+        .where("week", "==", getWeek)
+        .get()
+        .then(snapshot => {
+          if (snapshot.empty) {
+            return res.status(418).json({
+              error: "No matching documents."
+            });
+          }
+          snapshot.forEach(doc => {
+            
+            result.push(doc.data());
+          });
+          return res.status(200).json({
+            Fitbit: result
+          });
+        })
+        .catch(err => {
+          let errmsg = "Error getting documents" + err;
+          return (rest.status(420).json = {
+            error: errmsg
+          });
+        });
+    }
+    // Get all music from user
+    if (getUser !== undefined && getWeek === undefined) {
+      let result = [];
+      let users = query
+        .where("userID", "==", getUser)
+        .get()
+        .then(snapshot => {
+          if (snapshot.empty) {
+            return res.status(418).json({
+              error: "No matching documents."
+            });
+          }
+          snapshot.forEach(doc => {
+           
+            result.push(doc.data());
+          });
+          return res.status(200).json({
+            Fitbit: result
+          });
+        })
+        .catch(err => {
+          let errmsg = "Error getting documents" + err;
+          return (res.status(420).json = {
+            error: errmsg
+          });
+        });
+    }
+
+    // return res.status(200).json({
+    //   searchFor: getUser,
+    //   queryRes: result
+
+    // });
+  });
+});
