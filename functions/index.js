@@ -567,6 +567,8 @@ exports.getDailyMusic = functions.https.onRequest((req, res) => {
   });
 });
 
+
+
 exports.sendText = functions.https.onRequest((req, res) => {
   if (req.method !== "POST") {
     return res.status(500).json({
@@ -877,6 +879,52 @@ exports.getDailyMusicUnix = functions.https.onRequest((req, res) => {
   });
 });
 
+exports.getDailyMoodUnix = functions.https.onRequest((req, res) => {
+  cors(req, res, () => {
+
+    let query = db.collection("Mood");
+
+    let getuser = req.query.userID;
+    //let timestamp = req.query.timestamp;
+
+    //let unixStart = timestampHandler(timestamp, "BEGINTIME");
+    //let unixEnd = timestampHandler(timestamp, "ENDTIME");
+
+    //console.log(moment(unixStart).isoWeekday());
+    //console.log(moment(unixStart).isoWeek());
+
+    if (getuser !== undefined) {
+      let result = [];
+      let users = query
+        .where("userID", "==", getuser)
+        //.where("timestamp", ">", unixStart.timestamp)
+        //.where("timestamp", "<", unixEnd.timestamp)
+        .get()
+        .then(snapshot => {
+          if (snapshot.empty) {
+            return res.status(413).json({
+              error: "No matching documents"
+            });
+          }
+          snapshot.forEach(doc => {
+            result.push(doc.data());
+          });
+          return res.status(200).json({
+            Mood: result
+          });
+        })
+
+        .catch(err => {
+          let errmsg = "error getting docs," + err;
+          return res.status(416).json({
+            error2: errmsg
+          });
+        });
+    }
+  });
+});
+
+
 exports.getMusicWeek = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
     const query = db.collection("statsMusic");
@@ -933,15 +981,9 @@ exports.getMusicWeek = functions.https.onRequest((req, res) => {
               }
             })
 
-
-            console.log("COUNTER: " + counter);
             sum++;
             })
            
-
-          
-
-
           for (i = 1; i <= array.length - 1; i++) {
             var valenceSum = 0;
             var energySum = 0;
