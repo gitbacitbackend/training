@@ -24,7 +24,8 @@ const ENDTIME = "T23:59:59";
 exports.registerMood = functions.https.onRequest((req, res) => {
   // const getMood = req.query.mood;
   // const getUser = req.query.user;
-  let getData = req.body;
+  let getData = req.body.data;
+  console.log(getData.data);
   // cors wrapper for cross platform(app) access
   let time = timestampHandler(getData.timestamp);
   getData.timestamp = time.timestamp;
