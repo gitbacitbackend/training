@@ -72,9 +72,11 @@ exports.registerData = functions.firestore
     // Get an object representing the document
     // e.g. {'name': 'Marie', 'age': 66}
     let newValue = snap.data();
+    console.log(newValue);
 
     // access a particular field as you would any JS property
     let userID = newValue.userID;
+    let mood = newValue.mood;
     let songs = "";
     let deleteSongs = [];
     var deleteFitbit = [];
@@ -83,7 +85,7 @@ exports.registerData = functions.firestore
       id: "462be484f8f245d896aa9ebb64ffa482",
       secret: "b6b6d1b122ed4f2b8ae0ea1c1a826c1f"
     });
-    let query = db.collection("users").doc(userID);
+    // let query = db.collection("users").doc(userID);
 
     /* Function for database call to get user information
      */
@@ -191,7 +193,7 @@ exports.registerData = functions.firestore
             resolve(spotres);
           })
           .catch(err => {
-            console.log("Error getting document", err);
+            console.log("Error getting document from music", err);
             reject(err);
             return err;
           });
@@ -217,7 +219,7 @@ exports.registerData = functions.firestore
             resolve(fitRes);
           })
           .catch(err => {
-            console.log("Error getting document", err);
+            console.log("Error getting document from fitbit", err);
             reject(err);
             return err;
           });
@@ -243,6 +245,7 @@ exports.registerData = functions.firestore
         dataObj.steps = fitObj.steps;
         dataObj.goals = fitObj.goals;
         dataObj.userID = fitObj.userID;
+        dataObj.mood = mood;
         let docID =
           fitObj.year.toString() +
           fitObj.week.toString() +
@@ -309,6 +312,7 @@ exports.registerData = functions.firestore
           songObj.week = tracks[item].week;
           songObj.weekday = tracks[item].weekday;
           songObj.year = tracks[item].year;
+          songObj.mood = mood;
           // console.log(artistFull);
           // Object.assign(dataObj, songObj, tracks[item]);
           // console.log(res[0].item.toString());
