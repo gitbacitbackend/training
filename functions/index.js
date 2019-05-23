@@ -1349,3 +1349,58 @@ exports.getUserInfo = functions.https.onRequest((req, res) => {
    });
   });
 });
+
+exports.getProfile = functions.https.onRequest((req, res) => {
+  cors(req, res, () => {
+    // idToken comes from the client app
+
+    const getUser = parseInt(req.query.userID);
+    const getName = req.query.name;
+    const query = db.collection("Profile");
+    //Splits the String so that Bearer goes away. TODO: Only allow if bearer is apart of the String
+    const idToken = req.headers['authorization'].split('Bearer ')[1];
+    console.log(idToken);
+
+    //verifies the token recieved with the header. TODO: Only respond with data that matches the uid..
+admin.auth().verifyIdToken(idToken)
+  .then(function(decodedToken) {
+    var uid = decodedToken.uid;
+    var email = decodedToken.email;
+    var provider = decodedToken.sign_up_provider;
+    console.log("uid er: " + uid);
+    console.log("email er: " + email);
+    console.log("provider er: " + provider);
+    // ...
+  }).catch(function(error) {
+    // Handle error
+  });
+
+    if (getUser !== undefined && getName !== undefined) {
+      let result = [];
+      let users = query
+        .where("userID", "==", getUser)
+        .where("name", "==", getName)
+        .get()
+        .then(snapshot => {
+          if (snapshot.empty) {
+            return res.status(418).json({
+              error: "No matching documents."
+            });
+          }
+          snapshot.forEach(doc => {
+            console.log(doc.id, "=>", doc.data());
+            result.push(doc.data());
+          });
+          return res.status(200).json({
+            Profile: result
+          });
+        })
+        .catch(err => {
+          let errmsg = "Error getting documents" + err;
+          return (rest.status(420).json = {
+            error: errmsg
+          });
+        });
+    }
+  })
+});
