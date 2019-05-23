@@ -1350,6 +1350,153 @@ exports.getUserInfo = functions.https.onRequest((req, res) => {
   });
 });
 
+exports.getMusicWeekDigiB = functions.https.onRequest((req, res) => {
+  cors(req, res, () => {
+    const query = db.collection("Music");
+    const getWeekID = parseInt(req.query.week);
+    const getUserID = req.query.userID;
+
+    if (getWeekID !== undefined) {
+      let result = [];
+      let valence = [];
+      let energy = [];
+      let danceability = [];
+      //let mood = [];
+    //  let tempmood = [];
+      let sum = 0;
+      let fulldata = [];
+      let date = [];
+      let array = [{weekday: "1"}];
+      let checker = [];
+      let counter = 0;
+
+      let music = query
+        .where("week", "==", getWeekID)
+        .orderBy("weekday", "desc")
+        .get()
+        .then(snapshot => {
+          if (snapshot.empty) {
+            return res.status(413).json({
+              error: "No document for this weekID"
+            });
+          }
+          snapshot.forEach(doc => {
+          
+        //    array.push({weekday: doc.get("weekday")[0]});
+            
+            day = doc.get("weekday");
+            unixTime = new Date(doc.get("timestamp")._seconds*1000);
+
+          
+
+            year = unixTime.getFullYear();
+            month =(unixTime.getMonth()+1);
+            day = (unixTime.getDate());
+            
+            valence.push(doc.get("weekday") + ":" + doc.get("valence"));
+            energy.push(doc.get("weekday") + ":" + doc.get("energy"));
+            danceability.push(doc.get("weekday") + ":" + doc.get("danceability"));
+            date.push(doc.get("weekday")+ ":" + year + "-" + month + "-" + day);
+         
+            if ( ! checker.includes(doc.get("weekday"))) {
+              checker.push(doc.get("weekday"))
+            }
+
+            checker.forEach((item)=>{
+             
+              if(doc.get("weekday") in checker){
+                counter ++;
+              }
+            })
+            })
+          
+          while (checker.length) {
+            var valenceSum = 0;
+            var energySum = 0;
+            var danceabilitySum = 0;
+            var valenceAntall = 0;
+            var energyAntall = 0;
+            var danceabilityAntall = 0;
+            var tempdate = "";
+            let p = checker.pop();
+            //  var i = 0;
+            //tempmood = [];
+          
+          /*
+            mood.forEach(item =>{
+              if(parseInt(item.split(":")[0]) === i){
+                m = item.split(":")[1];
+                tempmood.push(m);
+              }
+            });
+            */
+
+            date.forEach(item =>{
+              if(parseInt(item.split(":")[0]) === p){
+                d = item.split(":")[1];
+                tempdate = String(d);
+              }
+            });
+
+            valence.forEach(item => {
+              if (parseInt(item.split(":")[0]) === p) {
+                valenceSum = valenceSum + parseFloat(item.split(":")[1]);
+                valenceAntall++;
+              }
+            });
+
+            valenceSum = valenceSum / valenceAntall;
+            var resultValence = valenceSum.toFixed(2)*100;
+            
+            energy.forEach(item => {
+              if (parseInt(item.split(":")[0]) === p) {
+                energySum = energySum + parseFloat(item.split(":")[1]);
+                energyAntall++;
+              }
+            });
+            energySum = energySum / energyAntall;
+            var resultEnergy = energySum.toFixed(2)*100;
+            
+            var summen = 0;
+            var antall = 0;
+
+            danceability.forEach(item => {
+              if (parseInt(item.split(":")[0]) === p) {
+                danceabilitySum = danceabilitySum + parseFloat(item.split(":")[1]);
+                danceabilityAntall++;
+              }
+            });
+            danceabilitySum = danceabilitySum / danceabilityAntall;
+            var resultDanceability = danceabilitySum.toFixed(2)*100;
+
+
+            fulldata.push({
+              Energy: resultEnergy,
+              Danceability: resultDanceability,
+              Valence: resultValence,
+              weekday: p,
+              date: tempdate,
+              });
+          }
+          
+
+          var obj = JSON.parse(JSON.stringify(fulldata));
+
+          return res.status(200).json({
+            MusicStats: obj
+          });
+        })
+
+        .catch(err => {
+          let errmsg = "Error getting documents" + err;
+          return res.status(416).json({
+            error: errmsg
+          });
+        });
+    }
+  });
+});
+
 exports.getProfile = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
     // idToken comes from the client app
