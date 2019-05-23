@@ -1330,3 +1330,22 @@ exports.getFitbit = functions.https.onRequest((req, res) => {
     // });
   });
 });
+
+exports.getUserInfo = functions.https.onRequest((req, res) => {
+  cors(req, res, () => {
+
+    let uid = req.query.id;
+
+   admin.auth().getUser(uid)
+   .then((userRecord) => {
+     // See the UserRecord reference doc for the contents of userRecord.
+     console.log('Successfully fetched user data:', userRecord.toJSON());
+     return res.status(200).json({
+        user: userRecord
+     })
+   })
+   .catch((error) => {
+     console.log('Error fetching user data:', error);
+   });
+  });
+});
