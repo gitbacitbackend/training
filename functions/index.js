@@ -377,7 +377,7 @@ exports.getMusic = functions.https.onRequest((req, res) => {
         })
         .catch(err => {
           let errmsg = "Error getting documents" + err;
-          return (rest.status(420).json = {
+          return (res.status(420).json = {
             error: errmsg
           });
         });
@@ -565,7 +565,7 @@ exports.getDailyMusic = functions.https.onRequest((req, res) => {
         })
         .catch(err => {
           let errmsg = "Error getting documents" + err;
-          return rest.status(418).json({
+          return res.status(418).json({
             error: errmsg
           });
         });
@@ -1290,7 +1290,7 @@ exports.getFitbit = functions.https.onRequest((req, res) => {
         })
         .catch(err => {
           let errmsg = "Error getting documents" + err;
-          return (rest.status(420).json = {
+          return (res.status(420).json = {
             error: errmsg
           });
         });
@@ -1501,53 +1501,74 @@ exports.getProfile = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
     // idToken comes from the client app
 
-    const getUser = parseInt(req.query.userID);
-    const getName = req.query.name;
+   // const getUser = parseInt(req.query.userID);
     const query = db.collection("Profile");
     //Splits the String so that Bearer goes away. TODO: Only allow if bearer is apart of the String
     const idToken = req.headers['authorization'].split('Bearer ')[1];
     console.log(idToken);
 
-    //verifies the token recieved with the header. TODO: Only respond with data that matches the uid..
-admin.auth().verifyIdToken(idToken)
-  .then(function(decodedToken) {
-    var uid = decodedToken.uid;
-    var email = decodedToken.email;
-    var provider = decodedToken.sign_up_provider;
-    console.log("uid er: " + uid);
-    console.log("email er: " + email);
-    console.log("provider er: " + provider);
-    // ...
-  }).catch(function(error) {
-    // Handle error
-  });
+    const verifyer = verifyToken(idToken);
+    verifyer.then((verify) => {
+      console.log("Promise result ", verifyer)
+   
+    if (verify.authenticated === true) {
+      const getUser = verify.userid;
 
-    if (getUser !== undefined && getName !== undefined) {
-      let result = [];
-      let users = query
-        .where("userID", "==", getUser)
-        .where("name", "==", getName)
-        .get()
-        .then(snapshot => {
-          if (snapshot.empty) {
-            return res.status(418).json({
-              error: "No matching documents."
+      if (getUser !== undefined) {
+        let result = [];
+        // eslint-disable-next-line promise/no-nesting
+        let users = query
+          .where("userID", "==", getUser)
+          .get()
+          .then(snapshot => {
+            if (snapshot.empty) {
+              return res.status(418).json({
+                error: "No matching documents."
+              });
+            }
+            snapshot.forEach(doc => {
+              console.log(doc.id, "=>", doc.data());
+              result.push(doc.data());
             });
-          }
-          snapshot.forEach(doc => {
-            console.log(doc.id, "=>", doc.data());
-            result.push(doc.data());
+            return res.status(200).json({
+              Profile: result
+            });
+          })
+          .catch(err => {
+            let errmsg = "Error getting documents" + err;
+            return (res.status(420).json = {
+              error: errmsg
+            });
           });
-          return res.status(200).json({
-            Profile: result
-          });
-        })
-        .catch(err => {
-          let errmsg = "Error getting documents" + err;
-          return (rest.status(420).json = {
-            error: errmsg
-          });
-        });
+      }
     }
+  });
   })
 });
+
+ function verifyToken(idToken) {
+  return new Promise(resolve => {
+    admin.auth().verifyIdToken(idToken)
+    .then((decodedToken) => {
+      var uid = decodedToken.uid;
+      console.log("uid er: " + uid);
+      resolve( {authenticated: true, userid: uid})
+      // ...
+    }).catch((error) => {
+      // Handle error
+      console.log("Error authenticating user", error)
+      resolve ( {authenticated: false, userid: ""})
+    });
+  });
+    // idToken comes from the client app
+
+    // Move to Funcs
+    // const getUser = parseInt(req.query.userID);
+    // //Splits the String so that Bearer goes away. TODO: Only allow if bearer is apart of the String
+    // const idToken = req.headers['authorization'].split('Bearer ')[1];
+    // console.log(idToken);
+
+    //verifies the token recieved with the header. TODO: Only respond with data that matches the uid..
+
+
+}
