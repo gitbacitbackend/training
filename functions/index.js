@@ -24,7 +24,7 @@ const ENDTIME = "T23:59:59";
 exports.registerMood = functions.https.onRequest((req, res) => {
   // const getMood = req.query.mood;
   // const getUser = req.query.user;
-  let getData = req.body.data;
+  var getData = req.body.data;
   console.log(getData.data);
   // cors wrapper for cross platform(app) access
   let time = timestampHandler(getData.timestamp);
@@ -32,28 +32,50 @@ exports.registerMood = functions.https.onRequest((req, res) => {
   getData.week = time.week;
   getData.weekday = time.weekday;
   cors(req, res, () => {
-    if (req.method !== "POST") {
-      return res.status(420).json({
-        message: "Only POST allowed"
-      });
-    } else {
-      let collection = "Mood";
-      // let setDoc = db.collection(collection).doc(getUser).set(data);
-      let register = db
-        .collection(collection)
-        .add(getData)
-        .then(ref => {
-          console.log("Added document with ID: ", ref.id);
-          return res.status(200).json({
-            toCollection: collection,
-            registeredData: getData
-            // toUser: getUser,
-            // toMood: getMood,
-            // queryRes: result,
-            // comment: getData
+    const idToken = req.headers['authorization'].split('Bearer ')[1];
+    console.log(idToken);
+
+    const verifyer = verifyToken(idToken);
+    verifyer.then((verify) => {
+      console.log("Promise result ", verifyer)
+   
+    if (verify.authenticated === true) {
+      const getUser = verify.userid;
+      getData.userID = getUser;
+      console.log("her er user:", getUser);
+      if (getUser === undefined) {
+        return res.status(401).json({
+          error: "FUCK YOU!"
+        })
+      } else {
+        if (req.method !== "POST") {
+          return res.status(420).json({
+            message: "Only POST allowed"
           });
-        });
+        } else {
+          let collection = "Mood";
+          // let setDoc = db.collection(collection).doc(getUser).set(data);
+          // eslint-disable-next-line promise/no-nesting
+          let register = db
+            .collection(collection)
+            .add(getData)
+            .then(ref => {
+              console.log("Added document with ID: ", ref.id);
+              return res.status(200).json({
+                toCollection: collection,
+                registeredData: getData
+                // toUser: getUser,
+                // toMood: getMood,
+                // queryRes: result,
+                // comment: getData
+              });
+            });
+        }
+      }
     }
+  });
+
+   
     // let data = {
     //   user: getUser,
     //   mood: getMood,
@@ -1107,6 +1129,7 @@ exports.deleteCollection = functions.https.onRequest((req, res) => {
     });
 });
 
+// TODO : Change for authentication component token verification
 exports.tempDigiMe = functions.https.onRequest((req, res) => {
   //console.log(req.body.data);
   let obj = req.body.data;
