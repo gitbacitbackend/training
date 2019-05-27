@@ -45,7 +45,7 @@ exports.registerMood = functions.https.onRequest((req, res) => {
       console.log("her er user:", getUser);
       if (getUser === undefined) {
         return res.status(401).json({
-          error: "FUCK YOU!"
+          error: "User is undefined"
         })
       } else {
         if (req.method !== "POST") {
@@ -1598,21 +1598,40 @@ exports.getAllMusic = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
 
     const query = db.collection("Music");
+    const idToken = req.headers['authorization'].split('Bearer ')[1];
+    console.log(idToken);
 
-    const getUser = req.query.userID;
     const getTime = req.query.timestamp;
 
     let unixStart = timestampHandler(getTime, "BEGINTIME");
     let unixEnd = timestampHandler(getTime, "ENDTIME");
 
+   // calls verifytoken with the idToken from Header 
+    const verifyer = verifyToken(idToken);
+    verifyer.then((verify) => {
+      console.log("Promise result ", verifyer)
    
+    if (verify.authenticated === true) {
+      const getUser = verify.userid;
 
+      console.log("her er user:", getUser);
+      if (getUser === undefined) {
+        return res.status(401).json({
+          error: "User is undefined"
+        })
+      }
+      if (getTime === undefined) {
+        return res.status(401).json({
+          error: "Error setting time"
+        })
+      }
     // Get specific mood by user
-    if (getUser !== undefined && getTime !== undefined) {
+    else {
       let result = [];
       let happy = [];
       let sad = [];
       let neutral = [];
+      // eslint-disable-next-line promise/no-nesting
       let users = query
         .where("userID", "==", getUser)
         .where("timestamp", ">", unixStart.timestamp)
@@ -1661,5 +1680,7 @@ exports.getAllMusic = functions.https.onRequest((req, res) => {
           });
         });
     }
-  });
+  }
+});
+});
 });
