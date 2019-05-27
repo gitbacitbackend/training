@@ -1592,6 +1592,74 @@ exports.getProfile = functions.https.onRequest((req, res) => {
     // console.log(idToken);
 
     //verifies the token recieved with the header. TODO: Only respond with data that matches the uid..
-
-
 }
+
+exports.getAllMusic = functions.https.onRequest((req, res) => {
+  cors(req, res, () => {
+
+    const query = db.collection("Music");
+
+    const getUser = req.query.userID;
+    const getTime = req.query.timestamp;
+
+    let unixStart = timestampHandler(getTime, "BEGINTIME");
+    let unixEnd = timestampHandler(getTime, "ENDTIME");
+
+   
+
+    // Get specific mood by user
+    if (getUser !== undefined && getTime !== undefined) {
+      let result = [];
+      let happy = [];
+      let sad = [];
+      let neutral = [];
+      let users = query
+        .where("userID", "==", getUser)
+        .where("timestamp", ">", unixStart.timestamp)
+        .where("timestamp", "<", unixEnd.timestamp)
+        .get()
+        .then(snapshot => {
+          if (snapshot.empty) {
+            return res.status(418).json({
+              error: "No matching documents."
+            });
+          }
+          snapshot.forEach(doc => {
+            
+            //result.push(doc.data());
+
+            if(doc.get("mood") === "happy"){
+              happy.push(doc.data());
+            } else if(doc.get("mood") === "sad"){
+              sad.push(doc.data())
+            } else {
+              neutral.push(doc.data())
+            }
+
+         
+          });
+            console.log("HAPPY : "+happy)
+            console.log("SAD : "+ sad)
+            console.log("NEUTRAL:" + neutral)
+
+            result = {
+              "happy":happy,
+              "sad":sad,
+              "neutral":neutral,
+            }
+        
+
+          return res.status(200).json({
+            Mood:result
+          });
+        })
+
+        .catch(err => {
+          let errmsg = "error getting docs," + err;
+          return res.status(416).json({
+            error2: errmsg
+          });
+        });
+    }
+  });
+});
