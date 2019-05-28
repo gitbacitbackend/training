@@ -1822,3 +1822,221 @@ exports.getAllMood = functions.https.onRequest((req, res) => {
   });
 });
 });
+
+exports.getAllFrontpage = functions.https.onRequest((req, res) => {
+  cors(req, res, () => {
+    let sleepResult = [];
+    let nutritionResult = [];
+    let activityResult = [];
+
+
+    let getuser = req.query.userID;
+    let timeStamp = req.query.timestamp;
+
+    let begintime = timestampHandler(timeStamp, "BEGINTIME");
+    let endtime = timestampHandler(timeStamp, "ENDTIME");
+
+    console.log(begintime.timestamp);
+    console.log(endtime.timestamp);
+
+    function getFitbit() {
+      return new Promise((resolve, reject) => {
+        let activityResult = [];
+        let activityQuery = db.collection("Fitbit");
+
+        let fitbit = activityQuery
+          .where("userID", "==", getuser)
+          .where("timestamp", ">", begintime.timestamp)
+          .where("timestamp", "<", endtime.timestamp)
+          .get()
+          .then(snapshot => {
+            if (snapshot.empty) {
+              console.log("error getting fitbit");
+            }
+            snapshot.forEach(doc => {
+              activityResult.push(doc.data());
+            });
+          })
+          .then(() => {
+            resolve({activity: activityResult});
+          })
+          .catch(err => {
+            console.log("Error getting document from music", err);
+            reject(err);
+            return err;
+          });
+      });
+    }
+    /*Function for getting the fitbit objects from temp fitbit collection
+     */
+    function getSleep() {
+      return new Promise((resolve, reject) => {
+        var sleepResult = [];
+        let sleepQuery = db.collection("Sleep");
+
+        let sleep = sleepQuery
+        .where("userID", "==", getuser)
+        .where("timestamp", ">", begintime.timestamp)
+        .where("timestamp", "<", endtime.timestamp)
+        .get()
+        .then(snapshot => {
+          if (snapshot.empty) {
+            console.log("Ërror getting sleep")
+          }
+          snapshot.forEach(doc => {
+            sleepResult.push(doc.data());
+          })
+            })
+          .then(() => {
+            resolve({sleep: sleepResult});
+          })
+          .catch(err => {
+            console.log("Error getting document from sleep", err);
+            reject(err);
+            return err;
+          });
+        })
+    }
+    function getNutrition() {
+      return new Promise((resolve, reject) => {
+        let nutritionResult = [];
+        let nutritionQuery = db.collection("Nutrition");
+
+        let nutrition = nutritionQuery
+          .where("userID", "==", getuser)
+          .where("timestamp", ">", begintime.timestamp)
+          .where("timestamp", "<", endtime.timestamp)
+          .get()
+          .then(snapshot => {
+            if (snapshot.empty) {
+              console.log("Nutrition fail document");
+            }
+            snapshot.forEach(doc => {
+              nutritionResult.push(doc.data());
+            })
+          })
+          .then(() => {
+            resolve({nutrition: nutritionResult});
+          })
+          .catch(err => {
+            console.log("Error getting document from sleep", err);
+            reject(err);
+            return err;
+          });
+        
+    })
+  }
+
+    // Run fitbit getter and set object for adding to database
+    Promise.all([getFitbit(), getSleep(), getNutrition()]).then(result => {
+
+      for (item in result) {
+        let dataObj = {};
+        console.log(result[item]);
+        let fitObj = result[item];
+      } 
+
+      return res.status(200).json({
+        result: result
+      });
+
+    });
+  });
+});
+
+
+exports.getMusicAndMood = functions.https.onRequest((req, res) => {
+  cors(req, res, () => {
+    let moodResult = [];
+    let musicResult = [];
+
+    //let getuser = req.query.userID;
+
+        //Splits the String so that Bearer goes away. TODO: Only allow if bearer is apart of the String
+        const idToken = req.headers["authorization"].split("Bearer ")[1];
+        console.log(idToken);
+    
+        const verifyer = verifyToken(idToken);
+        verifyer.then(verify => {
+          console.log("Promise result ", verifyer);
+    
+          if (verify.authenticated === true) {
+            const getUser = verify.userid;
+
+    /*Function for getting the fitbit objects from temp fitbit collection
+     */
+    function getMusic() {
+      return new Promise((resolve, reject) => {
+        var musicResult = [];
+        let musicQuery = db.collection("Music");
+
+        let music = musicQuery
+        .where("userID", "==", getUser)
+        .get()
+        .then(snapshot => {
+          if (snapshot.empty) {
+            console.log("Ërror getting music")
+          }
+          snapshot.forEach(doc => {
+            musicResult.push(doc.get("timestamp"));
+
+          })
+            })
+          .then(() => {
+            resolve({Music: musicResult});
+          })
+          .catch(err => {
+            console.log("Error getting document from music", err);
+            reject(err);
+            return err;
+          });
+        })
+    }
+    
+    function getMood() {
+      return new Promise((resolve, reject) => {
+        let moodResult = [];
+        let moodQuery = db.collection("Mood");
+
+        let mood = moodQuery
+          .where("userID", "==", getUser)
+          .get()
+          .then(snapshot => {
+            if (snapshot.empty) {
+              console.log("Mood fail document");
+            }
+            snapshot.forEach(doc => {
+
+              moodResult.push(doc.get("timestamp"));
+
+            })
+          })
+          .then(() => {
+            resolve({Mood: moodResult});
+          })
+          .catch(err => {
+            console.log("Error getting document from mood", err);
+            reject(err);
+            return err;
+          });
+        
+    })
+  }
+
+    // Run fitbit getter and set object for adding to database
+    Promise.all([getMusic(), getMood()]).then(result => {
+
+      for (item in result) {
+        let dataObj = {};
+        console.log(result[item]);
+        let fitObj = result[item];
+      } 
+
+      return res.status(200).json({
+        result: result
+      });
+
+    });
+  }});
+  });
+});
