@@ -32,50 +32,49 @@ exports.registerMood = functions.https.onRequest((req, res) => {
   getData.week = time.week;
   getData.weekday = time.weekday;
   cors(req, res, () => {
-    const idToken = req.headers['authorization'].split('Bearer ')[1];
+    const idToken = req.headers["authorization"].split("Bearer ")[1];
     console.log(idToken);
 
     const verifyer = verifyToken(idToken);
-    verifyer.then((verify) => {
-      console.log("Promise result ", verifyer)
-   
-    if (verify.authenticated === true) {
-      const getUser = verify.userid;
-      getData.userID = getUser;
-      console.log("her er user:", getUser);
-      if (getUser === undefined) {
-        return res.status(401).json({
-          error: "User is undefined"
-        })
-      } else {
-        if (req.method !== "POST") {
-          return res.status(420).json({
-            message: "Only POST allowed"
+    verifyer.then(verify => {
+      console.log("Promise result ", verifyer);
+
+      if (verify.authenticated === true) {
+        const getUser = verify.userid;
+        getData.userID = getUser;
+        console.log("her er user:", getUser);
+        if (getUser === undefined) {
+          return res.status(401).json({
+            error: "User is undefined"
           });
         } else {
-          let collection = "Mood";
-          // let setDoc = db.collection(collection).doc(getUser).set(data);
-          // eslint-disable-next-line promise/no-nesting
-          let register = db
-            .collection(collection)
-            .add(getData)
-            .then(ref => {
-              console.log("Added document with ID: ", ref.id);
-              return res.status(200).json({
-                toCollection: collection,
-                registeredData: getData
-                // toUser: getUser,
-                // toMood: getMood,
-                // queryRes: result,
-                // comment: getData
-              });
+          if (req.method !== "POST") {
+            return res.status(420).json({
+              message: "Only POST allowed"
             });
+          } else {
+            let collection = "Mood";
+            // let setDoc = db.collection(collection).doc(getUser).set(data);
+            // eslint-disable-next-line promise/no-nesting
+            let register = db
+              .collection(collection)
+              .add(getData)
+              .then(ref => {
+                console.log("Added document with ID: ", ref.id);
+                return res.status(200).json({
+                  toCollection: collection,
+                  registeredData: getData
+                  // toUser: getUser,
+                  // toMood: getMood,
+                  // queryRes: result,
+                  // comment: getData
+                });
+              });
+          }
         }
       }
-    }
-  });
+    });
 
-   
     // let data = {
     //   user: getUser,
     //   mood: getMood,
@@ -595,8 +594,6 @@ exports.getDailyMusic = functions.https.onRequest((req, res) => {
   });
 });
 
-
-
 exports.sendText = functions.https.onRequest((req, res) => {
   if (req.method !== "POST") {
     return res.status(500).json({
@@ -909,7 +906,6 @@ exports.getDailyMusicUnix = functions.https.onRequest((req, res) => {
 
 exports.getDailyMoodUnix = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
-
     let query = db.collection("Mood");
 
     //let getuser = req.query.userID;
@@ -922,51 +918,50 @@ exports.getDailyMoodUnix = functions.https.onRequest((req, res) => {
     console.log(unixStart.timestamp);
     console.log(unixEnd.timestamp);
 
-    const idToken = req.headers['authorization'].split('Bearer ')[1];
+    const idToken = req.headers["authorization"].split("Bearer ")[1];
     console.log(idToken);
 
-    // calls verifytoken() with the idToken from Header 
+    // calls verifytoken() with the idToken from Header
     const verifyer = verifyToken(idToken);
-    verifyer.then((verify) => {
-      console.log("Promise result ", verifyer)
-   
-    if (verify.authenticated === true) {
-      const getUser = verify.userid;
+    verifyer.then(verify => {
+      console.log("Promise result ", verifyer);
 
-    if (timeStamp !== undefined) {
-      let result = [];
-      // eslint-disable-next-line promise/no-nesting
-      let users = query
-        .where("userID", "==", getUser)
-        .where("timestamp", ">", unixStart.timestamp)
-        .where("timestamp", "<", unixEnd.timestamp)
-        .get()
-        .then(snapshot => {
-          if (snapshot.empty) {
-            return res.status(413).json({
-              error: "No matching documents"
+      if (verify.authenticated === true) {
+        const getUser = verify.userid;
+
+        if (timeStamp !== undefined) {
+          let result = [];
+          // eslint-disable-next-line promise/no-nesting
+          let users = query
+            .where("userID", "==", getUser)
+            .where("timestamp", ">", unixStart.timestamp)
+            .where("timestamp", "<", unixEnd.timestamp)
+            .get()
+            .then(snapshot => {
+              if (snapshot.empty) {
+                return res.status(413).json({
+                  error: "No matching documents"
+                });
+              }
+              snapshot.forEach(doc => {
+                result.push(doc.data());
+              });
+              return res.status(200).json({
+                Mood: result
+              });
+            })
+
+            .catch(err => {
+              let errmsg = "error getting docs," + err;
+              return res.status(416).json({
+                error2: errmsg
+              });
             });
-          }
-          snapshot.forEach(doc => {
-            result.push(doc.data());
-          });
-          return res.status(200).json({
-            Mood: result
-          });
-        })
-
-        .catch(err => {
-          let errmsg = "error getting docs," + err;
-          return res.status(416).json({
-            error2: errmsg
-          });
-        });
-    }
-  }
-  })
+        }
+      }
+    });
   });
 });
-
 
 exports.getMusicWeek = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
@@ -984,7 +979,7 @@ exports.getMusicWeek = functions.https.onRequest((req, res) => {
       let sum = 0;
       let fulldata = [];
       let date = [];
-      let array = [{dayID: "1"}];
+      let array = [{ dayID: "1" }];
       let counter = 0;
 
       let music = query
@@ -997,36 +992,31 @@ exports.getMusicWeek = functions.https.onRequest((req, res) => {
             });
           }
           snapshot.forEach(doc => {
-          
-            
             day = doc.get("dayID");
-            unixTime = new Date(doc.get("timestamp")._seconds*1000);
-
-          
+            unixTime = new Date(doc.get("timestamp")._seconds * 1000);
 
             year = unixTime.getFullYear();
-            month =(unixTime.getMonth()+1);
-            day = (unixTime.getDate());
-            
+            month = unixTime.getMonth() + 1;
+            day = unixTime.getDate();
+
             valence.push(doc.get("dayID") + ":" + doc.get("Valence"));
             energy.push(doc.get("dayID") + ":" + doc.get("Energy"));
             danceability.push(doc.get("dayID") + ":" + doc.get("Danceability"));
-            mood.push(doc.get("dayID")+ ":" + doc.get("Mood"));
-            date.push(doc.get("dayID")+ ":" + year + "-" + month + "-" + day);
+            mood.push(doc.get("dayID") + ":" + doc.get("Mood"));
+            date.push(doc.get("dayID") + ":" + year + "-" + month + "-" + day);
 
-            array.forEach((item)=>{
-  
-              if(doc.get("dayID") in array){
-                return null
+            array.forEach(item => {
+              if (doc.get("dayID") in array) {
+                return null;
               } else {
-                array.push({dayID: doc.get("dayID")})
-                counter ++;
+                array.push({ dayID: doc.get("dayID") });
+                counter++;
               }
-            })
+            });
 
             sum++;
-            })
-           
+          });
+
           for (i = 1; i <= array.length - 1; i++) {
             var valenceSum = 0;
             var energySum = 0;
@@ -1036,17 +1026,16 @@ exports.getMusicWeek = functions.https.onRequest((req, res) => {
             var danceabilityAntall = 0;
             var tempdate = "";
             tempmood = [];
-          
 
-            mood.forEach(item =>{
-              if(parseInt(item.split(":")[0]) === i){
+            mood.forEach(item => {
+              if (parseInt(item.split(":")[0]) === i) {
                 m = item.split(":")[1];
                 tempmood.push(m);
               }
             });
 
-            date.forEach(item =>{
-              if(parseInt(item.split(":")[0]) === i){
+            date.forEach(item => {
+              if (parseInt(item.split(":")[0]) === i) {
                 d = item.split(":")[1];
                 tempdate = String(d);
               }
@@ -1061,7 +1050,7 @@ exports.getMusicWeek = functions.https.onRequest((req, res) => {
 
             valenceSum = valenceSum / valenceAntall;
             var resultValence = valenceSum.toFixed(0);
-            
+
             energy.forEach(item => {
               if (parseInt(item.split(":")[0]) === i) {
                 energySum = energySum + parseInt(item.split(":")[1]);
@@ -1070,13 +1059,14 @@ exports.getMusicWeek = functions.https.onRequest((req, res) => {
             });
             energySum = energySum / energyAntall;
             var resultEnergy = energySum.toFixed(0);
-            
+
             var summen = 0;
             var antall = 0;
 
             danceability.forEach(item => {
               if (parseInt(item.split(":")[0]) === i) {
-                danceabilitySum = danceabilitySum + parseInt(item.split(":")[1]);
+                danceabilitySum =
+                  danceabilitySum + parseInt(item.split(":")[1]);
                 danceabilityAntall++;
               }
             });
@@ -1089,8 +1079,8 @@ exports.getMusicWeek = functions.https.onRequest((req, res) => {
               Valence: resultValence,
               dayID: i,
               mood: tempmood,
-              date: tempdate,
-              });
+              date: tempdate
+            });
           }
 
           var obj = JSON.parse(JSON.stringify(fulldata));
@@ -1174,7 +1164,6 @@ exports.tempDigiMe = functions.https.onRequest((req, res) => {
     } else {
       for (key in DigiObj) {
         if (key === "spotify") {
-
           var resObj = {};
           var spotifyObj = DigiObj.spotify;
           for (items in spotifyObj) {
@@ -1184,7 +1173,7 @@ exports.tempDigiMe = functions.https.onRequest((req, res) => {
             // console.log(items);
             //console.log(DigiObj[items]);
             // console.log(MusicObj[0][items]);
-  
+
             // console.log(MusicObj[items].track);
             let trackObj = spotifyObj[items].track;
             let dataObj = {};
@@ -1211,10 +1200,8 @@ exports.tempDigiMe = functions.https.onRequest((req, res) => {
                   resolve();
                 });
             });
-        }
-      }
-        else if (key === "fitbit") {
-
+          }
+        } else if (key === "fitbit") {
           var fitbitObj = DigiObj.fitbit;
           for (items in fitbitObj) {
             // console.log(fitbitObj[items]);
@@ -1242,7 +1229,6 @@ exports.tempDigiMe = functions.https.onRequest((req, res) => {
               });
             }
           }
-
         }
       }
 
@@ -1295,66 +1281,61 @@ exports.tempData = functions.https.onRequest((req, res) => {
   });
 });
 
-
-
 exports.getFitbit = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
-
     //const getUser = req.query.userID;
-    const idToken = req.headers['authorization'].split('Bearer ')[1];
+    const idToken = req.headers["authorization"].split("Bearer ")[1];
     console.log(idToken);
     const getWeek = parseInt(req.query.weekID);
-    console.log("Her er uken: "  + getWeek)
+    console.log("Her er uken: " + getWeek);
 
     const query = db.collection("Fitbit");
 
-    // calls verifytoken with the idToken from Header 
+    // calls verifytoken with the idToken from Header
     const verifyer = verifyToken(idToken);
-    verifyer.then((verify) => {
-      console.log("Promise result ", verifyer)
-   
-    if (verify.authenticated === true) {
-      const getUser = verify.userid;
+    verifyer.then(verify => {
+      console.log("Promise result ", verifyer);
 
-      console.log("her er user:", getUser);
- 
-      let result = [];
-      // eslint-disable-next-line promise/no-nesting
-      let users = query
-        .where("userID", "==", getUser)
-        .where("week", "==", getWeek)
-        .get()
-        .then(snapshot => {
+      if (verify.authenticated === true) {
+        const getUser = verify.userid;
+
+        console.log("her er user:", getUser);
+
+        let result = [];
+        // eslint-disable-next-line promise/no-nesting
+        let users = query
+          .where("userID", "==", getUser)
+          .where("week", "==", getWeek)
+          .get()
+          .then(snapshot => {
             snapshot.forEach(doc => {
               console.log(doc.id, "=>", doc.data());
               result.push(doc.data());
             });
-            if(snapshot.empty) {
+            if (snapshot.empty) {
               return res.status(418).json({
                 error: "No matching documents."
-          })
-        }
+              });
+            }
             return res.status(200).json({
               Fitbit: result
             });
-            
-        }).catch(err => {
-          let errmsg = "Error getting documents" + err;
-          return (res.status(420).json = {
-            error: errmsg
+          })
+          .catch(err => {
+            let errmsg = "Error getting documents" + err;
+            return (res.status(420).json = {
+              error: errmsg
+            });
           });
-        }); 
-  
-        
 
-       // if user is undefined 
-    
-    if (getUser === undefined) {
-      return res.status(401).json({
-        error: "User is undefined"
-      })
-    }
-    /*
+        // if user is undefined
+
+        if (getUser === undefined) {
+          return res.status(401).json({
+            error: "User is undefined"
+          });
+        }
+        /*
     // Get all fit from user
     if (getUser !== undefined && getWeek === undefined) {
       let result = [];
@@ -1384,289 +1365,286 @@ exports.getFitbit = functions.https.onRequest((req, res) => {
         });
     }
 */
-    // return res.status(200).json({
-    //   searchFor: getUser,
-    //   queryRes: result
+        // return res.status(200).json({
+        //   searchFor: getUser,
+        //   queryRes: result
 
-    // });
-    }
+        // });
+      }
+    });
   });
-
-});
 });
 
 exports.getUserInfo = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
-
     let uid = req.query.id;
 
-   admin.auth().getUser(uid)
-   .then((userRecord) => {
-     // See the UserRecord reference doc for the contents of userRecord.
-     console.log('Successfully fetched user data:', userRecord.toJSON());
-     return res.status(200).json({
-        user: userRecord
-     })
-   })
-   .catch((error) => {
-     console.log('Error fetching user data:', error);
-   });
+    admin
+      .auth()
+      .getUser(uid)
+      .then(userRecord => {
+        // See the UserRecord reference doc for the contents of userRecord.
+        console.log("Successfully fetched user data:", userRecord.toJSON());
+        return res.status(200).json({
+          user: userRecord
+        });
+      })
+      .catch(error => {
+        console.log("Error fetching user data:", error);
+      });
   });
 });
-
 
 exports.getMusicWeekDigiB = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
     const query = db.collection("Music");
     const getWeekID = parseInt(req.query.week);
-    const idToken = req.headers['authorization'].split('Bearer ')[1];
+    const idToken = req.headers["authorization"].split("Bearer ")[1];
     console.log(idToken);
     //const getUserID = req.query.userID;
 
-    // calls verifytoken with the idToken from Header 
+    // calls verifytoken with the idToken from Header
     const verifyer = verifyToken(idToken);
-    verifyer.then((verify) => {
-      console.log("Promise result ", verifyer)
-   
-    if (verify.authenticated === true) {
-      const getUser = verify.userid;
+    verifyer.then(verify => {
+      console.log("Promise result ", verifyer);
 
-      console.log("her er user:", getUser);
-      if (getUser === undefined) {
-        return res.status(401).json({
-          error: "User is undefined"
-        })
-      }else 
-      
-      if (getWeekID !== undefined) {
-      let result = [];
-      let valence = [];
-      let energy = [];
-      let danceability = [];
-      let mood = [];
-    //  let tempmood = [];
-      let sum = 0;
-      let fulldata = [];
-      let date = [];
-      let array = [{weekday: "1"}];
-      let checker = [];
-      let counter = 0;
+      if (verify.authenticated === true) {
+        const getUser = verify.userid;
 
-      // eslint-disable-next-line promise/no-nesting
-      let music = query
-        .where("week", "==", getWeekID)
-        .where("userID", "==", getUser)
-        .orderBy("weekday", "desc")
-        .get()
-        .then(snapshot => {
-          if (snapshot.empty) {
-            return res.status(413).json({
-              error: "No document for this weekID"
-            });
-          }
-          snapshot.forEach(doc => {
-          
-        //    array.push({weekday: doc.get("weekday")[0]});
-            
-            day = doc.get("weekday");
-            unixTime = new Date(doc.get("timestamp")._seconds*1000);
+        console.log("her er user:", getUser);
+        if (getUser === undefined) {
+          return res.status(401).json({
+            error: "User is undefined"
+          });
+        } else if (getWeekID !== undefined) {
+          let result = [];
+          let valence = [];
+          let energy = [];
+          let danceability = [];
+          let mood = [];
+          //  let tempmood = [];
+          let sum = 0;
+          let fulldata = [];
+          let date = [];
+          let array = [{ weekday: "1" }];
+          let checker = [];
+          let counter = 0;
 
-          
-
-            year = unixTime.getFullYear();
-            month =(unixTime.getMonth()+1);
-            day = (unixTime.getDate());
-            
-            valence.push(doc.get("weekday") + ":" + doc.get("valence"));
-            energy.push(doc.get("weekday") + ":" + doc.get("energy"));
-            danceability.push(doc.get("weekday") + ":" + doc.get("danceability"));
-            date.push(doc.get("weekday")+ ":" + year + "-" + month + "-" + day);
-            mood.push(doc.get("weekday")+ ":" + doc.get("mood"));
-         
-            if ( ! checker.includes(doc.get("weekday"))) {
-              checker.push(doc.get("weekday"))
-            }
-
-            checker.forEach((item)=>{
-             
-              if(doc.get("weekday") in checker){
-                counter ++;
+          // eslint-disable-next-line promise/no-nesting
+          let music = query
+            .where("week", "==", getWeekID)
+            .where("userID", "==", getUser)
+            .orderBy("weekday", "desc")
+            .get()
+            .then(snapshot => {
+              if (snapshot.empty) {
+                return res.status(413).json({
+                  error: "No document for this weekID"
+                });
               }
-            })
-            })
-          
-          while (checker.length) {
-            var valenceSum = 0;
-            var energySum = 0;
-            var danceabilitySum = 0;
-            var valenceAntall = 0;
-            var energyAntall = 0;
-            var danceabilityAntall = 0;
-            var tempdate = "";
-            let p = checker.pop();
-            //  var i = 0;
-            tempmood = [];
-          
-          
-            // eslint-disable-next-line no-loop-func
-            mood.forEach(item =>{
-              if(parseInt(item.split(":")[0]) === p){
-                m = item.split(":")[1];
-                tempmood.push(m);
-              }
-            });
-            
+              snapshot.forEach(doc => {
+                //    array.push({weekday: doc.get("weekday")[0]});
 
-            // eslint-disable-next-line no-loop-func
-            date.forEach(item =>{
-              if(parseInt(item.split(":")[0]) === p){
-                d = item.split(":")[1];
-                tempdate = String(d);
-              }
-            });
+                day = doc.get("weekday");
+                unixTime = new Date(doc.get("timestamp")._seconds * 1000);
 
-            // eslint-disable-next-line no-loop-func
-            valence.forEach(item => {
-              if (parseInt(item.split(":")[0]) === p) {
-                valenceSum = valenceSum + parseFloat(item.split(":")[1]);
-                valenceAntall++;
-              }
-            });
+                year = unixTime.getFullYear();
+                month = unixTime.getMonth() + 1;
+                day = unixTime.getDate();
 
-            valenceSum = valenceSum / valenceAntall;
-            var resultValence = valenceSum.toFixed(2)*100;
-            
-            // eslint-disable-next-line no-loop-func
-            energy.forEach(item => {
-              if (parseInt(item.split(":")[0]) === p) {
-                energySum = energySum + parseFloat(item.split(":")[1]);
-                energyAntall++;
-              }
-            });
-            energySum = energySum / energyAntall;
-            var resultEnergy = energySum.toFixed(2)*100;
-            
-            var summen = 0;
-            var antall = 0;
+                valence.push(doc.get("weekday") + ":" + doc.get("valence"));
+                energy.push(doc.get("weekday") + ":" + doc.get("energy"));
+                danceability.push(
+                  doc.get("weekday") + ":" + doc.get("danceability")
+                );
+                date.push(
+                  doc.get("weekday") + ":" + year + "-" + month + "-" + day
+                );
+                mood.push(doc.get("weekday") + ":" + doc.get("mood"));
 
-            // eslint-disable-next-line no-loop-func
-            danceability.forEach(item => {
-              if (parseInt(item.split(":")[0]) === p) {
-                danceabilitySum = danceabilitySum + parseFloat(item.split(":")[1]);
-                danceabilityAntall++;
-              }
-            });
-            danceabilitySum = danceabilitySum / danceabilityAntall;
-            var resultDanceability = danceabilitySum.toFixed(2)*100;
+                if (!checker.includes(doc.get("weekday"))) {
+                  checker.push(doc.get("weekday"));
+                }
 
-
-            fulldata.push({
-              Energy: resultEnergy,
-              Danceability: resultDanceability,
-              Valence: resultValence,
-              weekday: p,
-              date: tempdate,
-              mood: tempmood,
+                checker.forEach(item => {
+                  if (doc.get("weekday") in checker) {
+                    counter++;
+                  }
+                });
               });
-          }       
-          var obj = JSON.parse(JSON.stringify(fulldata));
 
-          return res.status(200).json({
-            MusicStats: obj
-          });
-        })
+              while (checker.length) {
+                var valenceSum = 0;
+                var energySum = 0;
+                var danceabilitySum = 0;
+                var valenceAntall = 0;
+                var energyAntall = 0;
+                var danceabilityAntall = 0;
+                var tempdate = "";
+                let p = checker.pop();
+                //  var i = 0;
+                tempmood = [];
 
-        .catch(err => {
-          let errmsg = "Error getting documents" + err;
-          return res.status(416).json({
-            error: errmsg
-          });
-        });
-    }
-  }
+                // eslint-disable-next-line no-loop-func
+                mood.forEach(item => {
+                  if (parseInt(item.split(":")[0]) === p) {
+                    m = item.split(":")[1];
+                    tempmood.push(m);
+                  }
+                });
+
+                // eslint-disable-next-line no-loop-func
+                date.forEach(item => {
+                  if (parseInt(item.split(":")[0]) === p) {
+                    d = item.split(":")[1];
+                    tempdate = String(d);
+                  }
+                });
+
+                // eslint-disable-next-line no-loop-func
+                valence.forEach(item => {
+                  if (parseInt(item.split(":")[0]) === p) {
+                    valenceSum = valenceSum + parseFloat(item.split(":")[1]);
+                    valenceAntall++;
+                  }
+                });
+
+                valenceSum = valenceSum / valenceAntall;
+                var resultValence = valenceSum.toFixed(2) * 100;
+
+                // eslint-disable-next-line no-loop-func
+                energy.forEach(item => {
+                  if (parseInt(item.split(":")[0]) === p) {
+                    energySum = energySum + parseFloat(item.split(":")[1]);
+                    energyAntall++;
+                  }
+                });
+                energySum = energySum / energyAntall;
+                var resultEnergy = energySum.toFixed(2) * 100;
+
+                var summen = 0;
+                var antall = 0;
+
+                // eslint-disable-next-line no-loop-func
+                danceability.forEach(item => {
+                  if (parseInt(item.split(":")[0]) === p) {
+                    danceabilitySum =
+                      danceabilitySum + parseFloat(item.split(":")[1]);
+                    danceabilityAntall++;
+                  }
+                });
+                danceabilitySum = danceabilitySum / danceabilityAntall;
+                var resultDanceability = danceabilitySum.toFixed(2) * 100;
+
+                fulldata.push({
+                  Energy: resultEnergy,
+                  Danceability: resultDanceability,
+                  Valence: resultValence,
+                  weekday: p,
+                  date: tempdate,
+                  mood: tempmood
+                });
+              }
+              var obj = JSON.parse(JSON.stringify(fulldata));
+
+              return res.status(200).json({
+                MusicStats: obj
+              });
+            })
+
+            .catch(err => {
+              let errmsg = "Error getting documents" + err;
+              return res.status(416).json({
+                error: errmsg
+              });
+            });
+        }
+      }
+    });
   });
-});
 });
 
 exports.getProfile = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
     // idToken comes from the client app
 
-   // const getUser = parseInt(req.query.userID);
+    // const getUser = parseInt(req.query.userID);
     const query = db.collection("Profile");
     //Splits the String so that Bearer goes away. TODO: Only allow if bearer is apart of the String
-    const idToken = req.headers['authorization'].split('Bearer ')[1];
+    const idToken = req.headers["authorization"].split("Bearer ")[1];
     console.log(idToken);
 
     const verifyer = verifyToken(idToken);
-    verifyer.then((verify) => {
-      console.log("Promise result ", verifyer)
-   
-    if (verify.authenticated === true) {
-      const getUser = verify.userid;
+    verifyer.then(verify => {
+      console.log("Promise result ", verifyer);
 
-      if (getUser !== undefined) {
-        let result = [];
-        // eslint-disable-next-line promise/no-nesting
-        let users = query
-          .where("userID", "==", getUser)
-          .get()
-          .then(snapshot => {
-            if (snapshot.empty) {
-              return res.status(418).json({
-                error: "No matching documents."
+      if (verify.authenticated === true) {
+        const getUser = verify.userid;
+
+        if (getUser !== undefined) {
+          let result = [];
+          // eslint-disable-next-line promise/no-nesting
+          let users = query
+            .where("userID", "==", getUser)
+            .get()
+            .then(snapshot => {
+              if (snapshot.empty) {
+                return res.status(418).json({
+                  error: "No matching documents."
+                });
+              }
+              snapshot.forEach(doc => {
+                console.log(doc.id, "=>", doc.data());
+                result.push(doc.data());
               });
-            }
-            snapshot.forEach(doc => {
-              console.log(doc.id, "=>", doc.data());
-              result.push(doc.data());
+              return res.status(200).json({
+                Profile: result
+              });
+            })
+            .catch(err => {
+              let errmsg = "Error getting documents" + err;
+              return (res.status(420).json = {
+                error: errmsg
+              });
             });
-            return res.status(200).json({
-              Profile: result
-            });
-          })
-          .catch(err => {
-            let errmsg = "Error getting documents" + err;
-            return (res.status(420).json = {
-              error: errmsg
-            });
-          });
+        }
       }
-    }
-  });
-  })
-});
-
- function verifyToken(idToken) {
-  return new Promise(resolve => {
-    admin.auth().verifyIdToken(idToken)
-    .then((decodedToken) => {
-      var uid = decodedToken.uid;
-      console.log("uid er: " + uid);
-      resolve( {authenticated: true, userid: uid})
-      // ...
-    }).catch((error) => {
-      // Handle error
-      console.log("Error authenticating user", error)
-      resolve ( {authenticated: false, userid: ""})
     });
   });
-    // idToken comes from the client app
+});
 
-    // Move to Funcs
-    // const getUser = parseInt(req.query.userID);
-    // //Splits the String so that Bearer goes away. TODO: Only allow if bearer is apart of the String
-    // const idToken = req.headers['authorization'].split('Bearer ')[1];
-    // console.log(idToken);
+function verifyToken(idToken) {
+  return new Promise(resolve => {
+    admin
+      .auth()
+      .verifyIdToken(idToken)
+      .then(decodedToken => {
+        var uid = decodedToken.uid;
+        console.log("uid er: " + uid);
+        resolve({ authenticated: true, userid: uid });
+        // ...
+      })
+      .catch(error => {
+        // Handle error
+        console.log("Error authenticating user", error);
+        resolve({ authenticated: false, userid: "" });
+      });
+  });
+  // idToken comes from the client app
 
-    //verifies the token recieved with the header. TODO: Only respond with data that matches the uid..
+  // Move to Funcs
+  // const getUser = parseInt(req.query.userID);
+  // //Splits the String so that Bearer goes away. TODO: Only allow if bearer is apart of the String
+  // const idToken = req.headers['authorization'].split('Bearer ')[1];
+  // console.log(idToken);
+
+  //verifies the token recieved with the header. TODO: Only respond with data that matches the uid..
 }
 
 exports.getAllMusic = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
-
     const query = db.collection("Music");
-    const idToken = req.headers['authorization'].split('Bearer ')[1];
+    const idToken = req.headers["authorization"].split("Bearer ")[1];
     console.log(idToken);
 
     const getTime = req.query.timestamp;
@@ -1674,89 +1652,84 @@ exports.getAllMusic = functions.https.onRequest((req, res) => {
     let unixStart = timestampHandler(getTime, "BEGINTIME");
     let unixEnd = timestampHandler(getTime, "ENDTIME");
 
-   // calls verifytoken with the idToken from Header 
+    // calls verifytoken with the idToken from Header
     const verifyer = verifyToken(idToken);
-    verifyer.then((verify) => {
-      console.log("Promise result ", verifyer)
-   
-    if (verify.authenticated === true) {
-      const getUser = verify.userid;
+    verifyer.then(verify => {
+      console.log("Promise result ", verifyer);
 
-      console.log("her er user:", getUser);
-      if (getUser === undefined) {
-        return res.status(401).json({
-          error: "User is undefined"
-        })
-      }
-      if (getTime === undefined) {
-        return res.status(401).json({
-          error: "Error setting time"
-        })
-      }
-    // Get specific mood by user
-    else {
-      let result = [];
-      let happy = [];
-      let sad = [];
-      let neutral = [];
-      // eslint-disable-next-line promise/no-nesting
-      let users = query
-        .where("userID", "==", getUser)
-        .where("timestamp", ">", unixStart.timestamp)
-        .where("timestamp", "<", unixEnd.timestamp)
-        .get()
-        .then(snapshot => {
-          if (snapshot.empty) {
-            return res.status(418).json({
-              error: "No matching documents."
+      if (verify.authenticated === true) {
+        const getUser = verify.userid;
+
+        console.log("her er user:", getUser);
+        if (getUser === undefined) {
+          return res.status(401).json({
+            error: "User is undefined"
+          });
+        }
+        if (getTime === undefined) {
+          return res.status(401).json({
+            error: "Error setting time"
+          });
+        }
+        // Get specific mood by user
+        else {
+          let result = [];
+          let happy = [];
+          let sad = [];
+          let neutral = [];
+          // eslint-disable-next-line promise/no-nesting
+          let users = query
+            .where("userID", "==", getUser)
+            .where("timestamp", ">", unixStart.timestamp)
+            .where("timestamp", "<", unixEnd.timestamp)
+            .get()
+            .then(snapshot => {
+              if (snapshot.empty) {
+                return res.status(418).json({
+                  error: "No matching documents."
+                });
+              }
+              snapshot.forEach(doc => {
+                //result.push(doc.data());
+
+                if (doc.get("mood") === "happy") {
+                  happy.push(doc.data());
+                } else if (doc.get("mood") === "sad") {
+                  sad.push(doc.data());
+                } else {
+                  neutral.push(doc.data());
+                }
+              });
+              console.log("HAPPY : " + happy);
+              console.log("SAD : " + sad);
+              console.log("NEUTRAL:" + neutral);
+
+              result = {
+                happy: happy,
+                sad: sad,
+                neutral: neutral
+              };
+
+              return res.status(200).json({
+                Mood: result
+              });
+            })
+
+            .catch(err => {
+              let errmsg = "error getting docs," + err;
+              return res.status(416).json({
+                error2: errmsg
+              });
             });
-          }
-          snapshot.forEach(doc => {
-            
-            //result.push(doc.data());
-
-            if(doc.get("mood") === "happy"){
-              happy.push(doc.data());
-            } else if(doc.get("mood") === "sad"){
-              sad.push(doc.data())
-            } else {
-              neutral.push(doc.data())
-            }
-
-         
-          });
-            console.log("HAPPY : "+happy)
-            console.log("SAD : "+ sad)
-            console.log("NEUTRAL:" + neutral)
-
-            result = {
-              "happy":happy,
-              "sad":sad,
-              "neutral":neutral,
-            }
-        
-
-          return res.status(200).json({
-            Mood:result
-          });
-        })
-
-        .catch(err => {
-          let errmsg = "error getting docs," + err;
-          return res.status(416).json({
-            error2: errmsg
-          });
-        });
-    }
-  }
-});
-});
+        }
+      }
+    });
+  });
 });
 
 exports.getAllMood = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
-
-    const idToken = req.headers['authorization'].split('Bearer ')[1];
+    const idToken = req.headers["authorization"].split("Bearer ")[1];
     console.log(idToken);
 
     let query = db.collection("Mood");
@@ -1764,63 +1737,62 @@ exports.getAllMood = functions.https.onRequest((req, res) => {
     let array = [];
 
     const verifyer = verifyToken(idToken);
-    verifyer.then((verify) => {
-      console.log("Promise result ", verifyer)
-   
-    if (verify.authenticated === true) {
-      const getUser = verify.userid;
+    verifyer.then(verify => {
+      console.log("Promise result ", verifyer);
 
-      let result = [];
-      // eslint-disable-next-line promise/no-nesting
-      let users = query
-        .where("userID", "==", getUser)
-        .get()
-        .then(snapshot => {
-          if (snapshot.empty) {
-            return res.status(413).json({
-              error: "No matching documents"
-            });
-          }
-          snapshot.forEach(doc => {        
-         function Unix_timestamp(t){
-            var dt = new Date(t*1000);
-            var year = dt.getFullYear();
-            var m =  String(dt.getMonth() + 1);
-            var d =  String(dt.getDate());
+      if (verify.authenticated === true) {
+        const getUser = verify.userid;
 
-            if(m.length === 1){
-              month = "0" + m
-            } else {
-              month = m
+        let result = [];
+        // eslint-disable-next-line promise/no-nesting
+        let users = query
+          .where("userID", "==", getUser)
+          .get()
+          .then(snapshot => {
+            if (snapshot.empty) {
+              return res.status(413).json({
+                error: "No matching documents"
+              });
             }
-            if(d.length === 1){
-              day = "0" + d
-            } else {
-              day = d
-            }
-            return year + '-' + month + '-' + day;  
-          }
-            array.push(
-              {
-              mood: doc.get("mood"),
-              timestamp: Unix_timestamp(doc.get("timestamp")._seconds),
+            snapshot.forEach(doc => {
+              function Unix_timestamp(t) {
+                var dt = new Date(t * 1000);
+                var year = dt.getFullYear();
+                var m = String(dt.getMonth() + 1);
+                var d = String(dt.getDate());
+
+                if (m.length === 1) {
+                  month = "0" + m;
+                } else {
+                  month = m;
+                }
+                if (d.length === 1) {
+                  day = "0" + d;
+                } else {
+                  day = d;
+                }
+                return year + "-" + month + "-" + day;
+              }
+              array.push({
+                mood: doc.get("mood"),
+                timestamp: Unix_timestamp(doc.get("timestamp")._seconds)
               });
 
-            result.push(doc.data());
+              result.push(doc.data());
+            });
+            return res.status(200).json({
+              Mood: array
+            });
+          })
+          .catch(err => {
+            let errmsg = "error getting docs," + err;
+            return res.status(416).json({
+              error2: errmsg
+            });
           });
-          return res.status(200).json({
-            Mood: array
-          });
-        })
-        .catch(err => {
-          let errmsg = "error getting docs," + err;
-          return res.status(416).json({
-            error2: errmsg
-          });
-        });
-    }  
+      }
+    });
   });
-});
 });
 
 exports.getAllFrontpage = functions.https.onRequest((req, res) => {
@@ -1828,7 +1800,6 @@ exports.getAllFrontpage = functions.https.onRequest((req, res) => {
     let sleepResult = [];
     let nutritionResult = [];
     let activityResult = [];
-
 
     let getuser = req.query.userID;
     let timeStamp = req.query.timestamp;
@@ -1858,7 +1829,7 @@ exports.getAllFrontpage = functions.https.onRequest((req, res) => {
             });
           })
           .then(() => {
-            resolve({activity: activityResult});
+            resolve({ activity: activityResult });
           })
           .catch(err => {
             console.log("Error getting document from music", err);
@@ -1875,27 +1846,27 @@ exports.getAllFrontpage = functions.https.onRequest((req, res) => {
         let sleepQuery = db.collection("Sleep");
 
         let sleep = sleepQuery
-        .where("userID", "==", getuser)
-        .where("timestamp", ">", begintime.timestamp)
-        .where("timestamp", "<", endtime.timestamp)
-        .get()
-        .then(snapshot => {
-          if (snapshot.empty) {
-            console.log("Ërror getting sleep")
-          }
-          snapshot.forEach(doc => {
-            sleepResult.push(doc.data());
+          .where("userID", "==", getuser)
+          .where("timestamp", ">", begintime.timestamp)
+          .where("timestamp", "<", endtime.timestamp)
+          .get()
+          .then(snapshot => {
+            if (snapshot.empty) {
+              console.log("Ërror getting sleep");
+            }
+            snapshot.forEach(doc => {
+              sleepResult.push(doc.data());
+            });
           })
-            })
           .then(() => {
-            resolve({sleep: sleepResult});
+            resolve({ sleep: sleepResult });
           })
           .catch(err => {
             console.log("Error getting document from sleep", err);
             reject(err);
             return err;
           });
-        })
+      });
     }
     function getNutrition() {
       return new Promise((resolve, reject) => {
@@ -1913,130 +1884,120 @@ exports.getAllFrontpage = functions.https.onRequest((req, res) => {
             }
             snapshot.forEach(doc => {
               nutritionResult.push(doc.data());
-            })
+            });
           })
           .then(() => {
-            resolve({nutrition: nutritionResult});
+            resolve({ nutrition: nutritionResult });
           })
           .catch(err => {
             console.log("Error getting document from sleep", err);
             reject(err);
             return err;
           });
-        
-    })
-  }
+      });
+    }
 
     // Run fitbit getter and set object for adding to database
     Promise.all([getFitbit(), getSleep(), getNutrition()]).then(result => {
-
       for (item in result) {
         let dataObj = {};
         console.log(result[item]);
         let fitObj = result[item];
-      } 
+      }
 
       return res.status(200).json({
         result: result
       });
-
     });
   });
 });
-
 
 exports.getMusicAndMood = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
     let moodResult = [];
     let musicResult = [];
 
-    //let getuser = req.query.userID;
+    //Splits the String so that Bearer goes away. TODO: Only allow if bearer is apart of the String
+    const idToken = req.headers["authorization"].split("Bearer ")[1];
+    console.log(idToken);
 
-        //Splits the String so that Bearer goes away. TODO: Only allow if bearer is apart of the String
-        const idToken = req.headers["authorization"].split("Bearer ")[1];
-        console.log(idToken);
+    const verifyer = verifyToken(idToken);
+    verifyer.then(verify => {
+      console.log("Promise result ", verifyer);
+
+      function getMusic(getUser) {
+        return new Promise((resolve, reject) => {
+          var musicResult = [];
+          let musicQuery = db.collection("Music");
+
+          let music = musicQuery
+            .where("userID", "==", getUser)
+            .get()
+            .then(snapshot => {
+              if (snapshot.empty) {
+                console.log("Ërror getting music");
+              }
+              snapshot.forEach(doc => {
+                musicResult.push(doc.get("timestamp"));
+              });
+            })
+            .then(() => {
+              resolve({ Music: musicResult });
+            })
+            .catch(err => {
+              console.log("Error getting document from music", err);
+              reject(err);
+              return err;
+            });
+        });
+      }
+
+      function getMood(getUser) {
+        return new Promise((resolve, reject) => {
+          let moodResult = [];
+          let moodQuery = db.collection("Mood");
+
+          let mood = moodQuery
+            .where("userID", "==", getUser)
+            .get()
+            .then(snapshot => {
+              if (snapshot.empty) {
+                console.log("Mood fail document");
+              }
+              snapshot.forEach(doc => {
+                moodResult.push(doc.get("timestamp"));
+              });
+            })
+            .then(() => {
+              resolve({ Mood: moodResult });
+            })
+            .catch(err => {
+              console.log("Error getting document from mood", err);
+              reject(err);
+              return err;
+            });
+        });
+      }
+
+      if (verify.authenticated === true) {
+        const getUser = verify.userid;
+
+        /*Function for getting the fitbit objects from temp fitbit collection
+         */
     
-        const verifyer = verifyToken(idToken);
-        verifyer.then(verify => {
-          console.log("Promise result ", verifyer);
-    
-          if (verify.authenticated === true) {
-            const getUser = verify.userid;
-
-    /*Function for getting the fitbit objects from temp fitbit collection
-     */
-    function getMusic() {
-      return new Promise((resolve, reject) => {
-        var musicResult = [];
-        let musicQuery = db.collection("Music");
-
-        let music = musicQuery
-        .where("userID", "==", getUser)
-        .get()
-        .then(snapshot => {
-          if (snapshot.empty) {
-            console.log("Ërror getting music")
+        // Run fitbit getter and set object for adding to database
+        Promise.all([getMusic(getUser), getMood(getUser)]).then(result => {
+          for (item in result) {
+            let dataObj = {};
+            console.log(result[item]);
+            let fitObj = result[item];
           }
-          snapshot.forEach(doc => {
-            musicResult.push(doc.get("timestamp"));
 
-          })
-            })
-          .then(() => {
-            resolve({Music: musicResult});
-          })
-          .catch(err => {
-            console.log("Error getting document from music", err);
-            reject(err);
-            return err;
+          return res.status(200).json({
+            result: result
           });
-        })
-    }
-    
-    function getMood() {
-      return new Promise((resolve, reject) => {
-        let moodResult = [];
-        let moodQuery = db.collection("Mood");
-
-        let mood = moodQuery
-          .where("userID", "==", getUser)
-          .get()
-          .then(snapshot => {
-            if (snapshot.empty) {
-              console.log("Mood fail document");
-            }
-            snapshot.forEach(doc => {
-
-              moodResult.push(doc.get("timestamp"));
-
-            })
-          })
-          .then(() => {
-            resolve({Mood: moodResult});
-          })
-          .catch(err => {
-            console.log("Error getting document from mood", err);
-            reject(err);
-            return err;
-          });
-        
-    })
-  }
-
-    // Run fitbit getter and set object for adding to database
-    Promise.all([getMusic(), getMood()]).then(result => {
-
-      for (item in result) {
-        let dataObj = {};
-        console.log(result[item]);
-        let fitObj = result[item];
-      } 
-
-      return res.status(200).json({
-        result: result
-      });
-
+        });
+      }
     });
-  }});
   });
 });
