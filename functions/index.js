@@ -756,105 +756,113 @@ exports.deleteCollection = functions.https.onRequest((req, res) => {
 exports.tempDigiMe = functions.https.onRequest((req, res) => {
   //console.log(req.body.data);
   let obj = req.body.data;
-  const getUser = req.query.userID;
-  // console.log("OBJECT BEFORE", obj);
-  // console.log("Object lenght", Object.keys(obj).length);
-  // console.log("last Object", obj[obj.length - 1]);
-  var DigiObj = {};
-  for (entry in obj) {
-    console.log(JSON.parse(obj[entry]));
-    Object.assign(DigiObj, JSON.parse(obj[entry]));
-  }
-  // for (const key of Object.keys(obj)) {
-  //   console.log(key, obj[key]);
-  // }
-  // var DigiObj = JSON.parse(obj);
-  console.log("AFTER", DigiObj);
-  // console.log(DigiObj.length);
+  const verifyer = verifyToken(idToken);
+  verifyer.then(verify => {
+    console.log("Promise result ", verifyer);
 
-  cors(req, res, () => {
-    let promises = [];
-    let fitPromises = [];
-    if (req.method !== "POST") {
-      return res.status(420).json({
-        message: "Only POST allowed"
-      });
-    } else {
-      for (key in DigiObj) {
-        if (key === "spotify") {
-          var resObj = {};
-          var spotifyObj = DigiObj.spotify;
-          for (items in spotifyObj) {
-            // console.log(items);
-            let oneSong = spotifyObj[items];
-            // console.log(oneSong);
-            // console.log(items);
-            //console.log(DigiObj[items]);
-            // console.log(MusicObj[0][items]);
+    if (verify.authenticated === true) {
+      const getUser = verify.userid;
 
-            // console.log(MusicObj[items].track);
-            let trackObj = spotifyObj[items].track;
-            let dataObj = {};
-            // const getUser = req.query.userID;
-            // const getTime = req.query.timestamp;
-            const getTime = spotifyObj[items].createddate;
-            let time = timestampHandler(getTime);
-            dataObj["userID"] = getUser;
-            dataObj["timestamp"] = time.timestamp;
-            dataObj["week"] = time.week;
-            dataObj["weekday"] = time.weekday;
-            dataObj["year"] = time.year;
-            Object.assign(dataObj, trackObj);
-            let collection = "TempMusic";
-            // eslint-disable-next-line no-loop-func
-            var register = new Promise(resolve => {
-              promises.push(register);
-              db.collection(collection)
-                .add(dataObj)
+      var DigiObj = {};
+      for (entry in obj) {
+        console.log(JSON.parse(obj[entry]));
+        Object.assign(DigiObj, JSON.parse(obj[entry]));
+      }
+      // for (const key of Object.keys(obj)) {
+      //   console.log(key, obj[key]);
+      // }
+      // var DigiObj = JSON.parse(obj);
+      console.log("AFTER", DigiObj);
+      // console.log(DigiObj.length);
+
+      cors(req, res, () => {
+        let promises = [];
+        let fitPromises = [];
+        if (req.method !== "POST") {
+          return res.status(420).json({
+            message: "Only POST allowed"
+          });
+        } else {
+          for (key in DigiObj) {
+            if (key === "spotify") {
+              var resObj = {};
+              var spotifyObj = DigiObj.spotify;
+              for (items in spotifyObj) {
+                // console.log(items);
+                let oneSong = spotifyObj[items];
+                // console.log(oneSong);
+                // console.log(items);
+                //console.log(DigiObj[items]);
+                // console.log(MusicObj[0][items]);
+
+                // console.log(MusicObj[items].track);
+                let trackObj = spotifyObj[items].track;
+                let dataObj = {};
+                // const getUser = req.query.userID;
+                // const getTime = req.query.timestamp;
+                const getTime = spotifyObj[items].createddate;
+                let time = timestampHandler(getTime);
+                dataObj["userID"] = getUser;
+                dataObj["timestamp"] = time.timestamp;
+                dataObj["week"] = time.week;
+                dataObj["weekday"] = time.weekday;
+                dataObj["year"] = time.year;
+                Object.assign(dataObj, trackObj);
+                let collection = "TempMusic";
                 // eslint-disable-next-line no-loop-func
-                .then(ref => {
-                  console.log("Added document with ID: ", ref.id);
-                  Object.assign(resObj, dataObj);
-                  resolve();
+                var register = new Promise(resolve => {
+                  promises.push(register);
+                  // eslint-disable-next-line promise/no-nesting
+                  db.collection(collection)
+                    .add(dataObj)
+                    // eslint-disable-next-line no-loop-func
+                    .then(ref => {
+                      console.log("Added document with ID: ", ref.id);
+                      Object.assign(resObj, dataObj);
+                      resolve();
+                    });
                 });
-            });
-          }
-        } else if (key === "fitbit") {
-          var fitbitObj = DigiObj.fitbit;
-          for (items in fitbitObj) {
-            // console.log(fitbitObj[items]);
-            fitbitObj[items].userID = getUser;
-            if (fitbitObj[items].caloriesout) {
-              let collection = "TempFitBit";
-              let getTime = fitbitObj[items].createddate;
-              let time = timestampHandler(getTime);
-              fitbitObj[items]["userID"] = getUser;
-              fitbitObj[items]["timestamp"] = time.timestamp;
-              fitbitObj[items]["week"] = time.week;
-              fitbitObj[items]["weekday"] = time.weekday;
-              fitbitObj[items]["year"] = time.year;
-              // eslint-disable-next-line no-loop-func
-              var registerFit = new Promise(resolve => {
-                fitPromises.push(registerFit);
-                db.collection(collection)
-                  .add(fitbitObj[items])
+              }
+            } else if (key === "fitbit") {
+              var fitbitObj = DigiObj.fitbit;
+              for (items in fitbitObj) {
+                // console.log(fitbitObj[items]);
+                fitbitObj[items].userID = getUser;
+                if (fitbitObj[items].caloriesout) {
+                  let collection = "TempFitBit";
+                  let getTime = fitbitObj[items].createddate;
+                  let time = timestampHandler(getTime);
+                  fitbitObj[items]["userID"] = getUser;
+                  fitbitObj[items]["timestamp"] = time.timestamp;
+                  fitbitObj[items]["week"] = time.week;
+                  fitbitObj[items]["weekday"] = time.weekday;
+                  fitbitObj[items]["year"] = time.year;
                   // eslint-disable-next-line no-loop-func
-                  .then(ref => {
-                    console.log("Added document with ID: ", ref.id);
-                    // Object.assign(resObj, fitbitObj[items]);
-                    resolve();
+                  var registerFit = new Promise(resolve => {
+                    fitPromises.push(registerFit);
+                    // eslint-disable-next-line promise/no-nesting
+                    db.collection(collection)
+                      .add(fitbitObj[items])
+                      // eslint-disable-next-line no-loop-func
+                      .then(ref => {
+                        console.log("Added document with ID: ", ref.id);
+                        // Object.assign(resObj, fitbitObj[items]);
+                        resolve();
+                      });
                   });
-              });
+                }
+              }
             }
           }
-        }
-      }
 
-      Promise.all(fitPromises, promises).then(() => {
-        console.log("All resolved");
-        return res.status(200).json({
-          DataAdded: "ok"
-        });
+          // eslint-disable-next-line promise/no-nesting
+          Promise.all(fitPromises, promises).then(() => {
+            console.log("All resolved");
+            return res.status(200).json({
+              DataAdded: "ok"
+            });
+          });
+        }
       });
     }
   });
@@ -1606,7 +1614,7 @@ exports.getMusicAndMood = functions.https.onRequest((req, res) => {
 
         /*Function for getting the fitbit objects from temp fitbit collection
          */
-    
+
         // Run fitbit getter and set object for adding to database
         // eslint-disable-next-line promise/no-nesting
         Promise.all([getMusic(getUser), getMood(getUser)]).then(result => {
