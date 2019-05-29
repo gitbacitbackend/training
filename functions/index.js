@@ -439,65 +439,6 @@ exports.getMusic = functions.https.onRequest((req, res) => {
   });
 });
 
-exports.getAllUsers = functions.https.onRequest((req, res) => {
-  let collection = "users";
-  let getUsers = db.collection(collection);
-  let result = [];
-
-  cors(req, res, () => {
-    if (req.method !== "GET") {
-      return res.status(420).json({
-        message: "Only GET allowed"
-      });
-    }
-
-    getUsers
-      .get()
-      .then(snapshot => {
-        snapshot.forEach(doc => {
-          console.log(doc.id, "=>", doc.data());
-          result.push(doc.data());
-        });
-        return res.status(200).json({ users: result });
-      })
-      .catch(err => {
-        console.log("Error getting documents", err);
-      });
-  });
-});
-
-exports.getOneUser = functions.https.onRequest((req, res) => {
-  let getUserName = req.query.user;
-  let getUser = db.collection("users").doc(getUserName);
-  let result = [];
-
-  cors(req, res, () => {
-    if (req.method !== "GET") {
-      return res.status(420).json({
-        message: "Only GET allowed"
-      });
-    }
-
-    var users = getUser
-      .get()
-      .then(doc => {
-        if (!doc.exists) {
-          console.log("No such document!");
-          return res.status(404).json({ message: "No data" });
-        } else if (result === !doc.exists) {
-          return res.status(404).json({ message: "No data" });
-        } else {
-          console.log("Document data:", doc.data());
-          result.push(doc.data());
-        }
-        return res.status(200).json({ result });
-      })
-      .catch(err => {
-        console.log("Error getting documents", err);
-      });
-  });
-});
-
 exports.getMood = functions.https.onRequest((req, res) => {
   let collection = "Mood";
   let getMood = db.collection(collection);
@@ -594,17 +535,7 @@ exports.getDailyMusic = functions.https.onRequest((req, res) => {
   });
 });
 
-exports.sendText = functions.https.onRequest((req, res) => {
-  if (req.method !== "POST") {
-    return res.status(500).json({
-      message: "Not allowed, only POST requests is allowed"
-    });
-  }
-  res.status(200).json({
-    message: "Euraka!"
-  });
-});
-
+//Slette?
 exports.timetest = functions.https.onRequest((req, res) => {
   if (req.method !== "GET") {
     return res.status(405).send(`${req.method} method not allowed`);
@@ -671,134 +602,6 @@ exports.timetest = functions.https.onRequest((req, res) => {
     });
 });
 
-/*
-function for getting DailyMusic with UserID and DateListened as input, works with firestores timestamp
-*/
-
-exports.getDate = functions.https.onRequest((req, res) => {
-  cors(req, res, () => {
-    let query = db.collection("DailyMusic");
-
-    let getUser = req.query.UserID;
-
-    let getDateFromUser = req.query.DateListened;
-
-    let fireTime = admin.firestore.Timestamp.fromDate(
-      new Date(getDateFromUser + "T00:00")
-    );
-
-    let endDate = admin.firestore.Timestamp.fromDate(
-      new Date(getDateFromUser + "T23:59")
-    );
-
-    console.log("firetime is: ", fireTime);
-
-    if (getUser !== undefined) {
-      let result = [];
-      let date = "";
-      let toTimestamp = "";
-      let users = query
-        .where("UserID", "==", getUser)
-        .where("DateListened", ">", fireTime)
-        .where("DateListened", "<", endDate)
-        .get()
-        .then(snapshot => {
-          if (snapshot.empty) {
-            return res.status(413).json({
-              error: "No matching documents"
-            });
-          }
-          snapshot.forEach(doc => {
-            result.push(doc.data());
-            date = doc.get("DateListened");
-            console.log(date.toDate());
-            /*
-          dateTo = date.toDate();
-          console.log("etter toDate():", dateTo)
-          toTimestamp = date.toMillis();
-          console.log("gjør til timestamp:", toTimestamp)
-          formattedDate = moment(toTimestamp).format('DD/MM/YYYY');
-          console.log(formattedDate);
-          */
-          });
-          return res.status(200).json({
-            dateis: result
-          });
-        })
-        .catch(err => {
-          let errmsg = "error getting docs," + err;
-          return res.status(416).json({
-            error2: errmsg
-          });
-        });
-    }
-  });
-});
-
-//https://jsonplaceholder.typicode.com/users
-exports.setData = functions.https.onRequest((req, res) => {
-  cors(req, res, () => {
-    let fetch = require("node-fetch");
-    //let data = require("./data.json");
-    let collectionKey = "posts";
-    let result = [];
-
-    async function getData() {
-      let data = await fetch("https://jsonplaceholder.typicode.com/todos");
-      let main = await data.json();
-      console.log(main);
-
-      if (main && typeof main === "object") {
-        Object.keys(main).forEach(docKey => {
-          db.collection(collectionKey)
-            .doc(docKey)
-            .set(main[docKey])
-            .then(res => {
-              console.log("Document " + docKey + " written");
-
-              /*if (req.method !== 'POST') {
-            return res.status(500).json({
-              message: "Not allowed, only POST requests is allowed",
-              err1: err
-            });
-          }*/
-
-              return null;
-            })
-            .catch(error => {
-              console.log("Error writing: ", error);
-              let errmsg = "Error getting documents" + error;
-              return res.status(418).json({
-                err2: errmsg
-              });
-            });
-        });
-      }
-    }
-    getData().catch(error => {
-      console.log("Error writing: ", error);
-      let errmsg = "Error getting documents" + error;
-      return res.status(418).json({
-        err3: errmsg
-      });
-    });
-
-    let returnData = db.collection(collectionKey);
-    returnData
-      .get()
-      .then(snapshot => {
-        snapshot.forEach(doc => {
-          console.log(doc.id, "=>", doc.data());
-          result.push(doc.data());
-        });
-        return res.status(200).json({ json: "all good" });
-      })
-      .catch(err => {
-        console.log("Error getting documents", err);
-      });
-  });
-});
-
 /*Function for adding timestamp to input without timestamp
 @param {string/number} timestamp - timestamp in format "YYYY-MM-DD" / alternative full format: "YYYY-MM-DDTHH:MM:SS" where SS is optional
 @param {string} type - the type of request, set by the calling function, optional param
@@ -855,54 +658,6 @@ function timestampHandler(timestamp, type) {
 
   //  console.log(date2);
 }
-
-/*
-function for getting DailyMusic with UserID and DateListened where DateListened is in UNIX timestamp format
-*/
-
-exports.getDailyMusicUnix = functions.https.onRequest((req, res) => {
-  cors(req, res, () => {
-    let query = db.collection("DailyMusic");
-
-    let getUser = req.query.UserID;
-    let getDateFromUser = req.query.DateListened;
-
-    let unixStart = timestampHandler(getDateFromUser, "BEGINTIME");
-    let unixEnd = timestampHandler(getDateFromUser, "ENDTIME");
-
-    console.log(moment(unixStart).isoWeekday());
-    console.log(moment(unixStart).isoWeek());
-
-    if (getUser !== undefined) {
-      let result = [];
-      let users = query
-        .where("UserID", "==", getUser)
-        .where("DateListened", ">", unixStart.timestamp)
-        .where("DateListened", "<", unixEnd.timestamp)
-        .get()
-        .then(snapshot => {
-          if (snapshot.empty) {
-            return res.status(413).json({
-              error: "No matching documents"
-            });
-          }
-          snapshot.forEach(doc => {
-            result.push(doc.data());
-          });
-          return res.status(200).json({
-            dateis: result
-          });
-        })
-
-        .catch(err => {
-          let errmsg = "error getting docs," + err;
-          return res.status(416).json({
-            error2: errmsg
-          });
-        });
-    }
-  });
-});
 
 exports.getDailyMoodUnix = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
@@ -963,143 +718,6 @@ exports.getDailyMoodUnix = functions.https.onRequest((req, res) => {
   });
 });
 
-exports.getMusicWeek = functions.https.onRequest((req, res) => {
-  cors(req, res, () => {
-    const query = db.collection("statsMusic");
-    const getWeekID = req.query.weekID;
-    const getUserID = req.query.userID;
-
-    if (getWeekID !== undefined) {
-      let result = [];
-      let valence = [];
-      let energy = [];
-      let danceability = [];
-      let mood = [];
-      let tempmood = [];
-      let sum = 0;
-      let fulldata = [];
-      let date = [];
-      let array = [{ dayID: "1" }];
-      let counter = 0;
-
-      let music = query
-        .where("weekID", "==", getWeekID)
-        .get()
-        .then(snapshot => {
-          if (snapshot.empty) {
-            return res.status(413).json({
-              error: "No document for this weekID"
-            });
-          }
-          snapshot.forEach(doc => {
-            day = doc.get("dayID");
-            unixTime = new Date(doc.get("timestamp")._seconds * 1000);
-
-            year = unixTime.getFullYear();
-            month = unixTime.getMonth() + 1;
-            day = unixTime.getDate();
-
-            valence.push(doc.get("dayID") + ":" + doc.get("Valence"));
-            energy.push(doc.get("dayID") + ":" + doc.get("Energy"));
-            danceability.push(doc.get("dayID") + ":" + doc.get("Danceability"));
-            mood.push(doc.get("dayID") + ":" + doc.get("Mood"));
-            date.push(doc.get("dayID") + ":" + year + "-" + month + "-" + day);
-
-            array.forEach(item => {
-              if (doc.get("dayID") in array) {
-                return null;
-              } else {
-                array.push({ dayID: doc.get("dayID") });
-                counter++;
-              }
-            });
-
-            sum++;
-          });
-
-          for (i = 1; i <= array.length - 1; i++) {
-            var valenceSum = 0;
-            var energySum = 0;
-            var danceabilitySum = 0;
-            var valenceAntall = 0;
-            var energyAntall = 0;
-            var danceabilityAntall = 0;
-            var tempdate = "";
-            tempmood = [];
-
-            mood.forEach(item => {
-              if (parseInt(item.split(":")[0]) === i) {
-                m = item.split(":")[1];
-                tempmood.push(m);
-              }
-            });
-
-            date.forEach(item => {
-              if (parseInt(item.split(":")[0]) === i) {
-                d = item.split(":")[1];
-                tempdate = String(d);
-              }
-            });
-
-            valence.forEach(item => {
-              if (parseInt(item.split(":")[0]) === i) {
-                valenceSum = valenceSum + parseInt(item.split(":")[1]);
-                valenceAntall++;
-              }
-            });
-
-            valenceSum = valenceSum / valenceAntall;
-            var resultValence = valenceSum.toFixed(0);
-
-            energy.forEach(item => {
-              if (parseInt(item.split(":")[0]) === i) {
-                energySum = energySum + parseInt(item.split(":")[1]);
-                energyAntall++;
-              }
-            });
-            energySum = energySum / energyAntall;
-            var resultEnergy = energySum.toFixed(0);
-
-            var summen = 0;
-            var antall = 0;
-
-            danceability.forEach(item => {
-              if (parseInt(item.split(":")[0]) === i) {
-                danceabilitySum =
-                  danceabilitySum + parseInt(item.split(":")[1]);
-                danceabilityAntall++;
-              }
-            });
-            danceabilitySum = danceabilitySum / danceabilityAntall;
-            var resultDanceability = danceabilitySum.toFixed(0);
-
-            fulldata.push({
-              Energy: resultEnergy,
-              Danceability: resultDanceability,
-              Valence: resultValence,
-              dayID: i,
-              mood: tempmood,
-              date: tempdate
-            });
-          }
-
-          var obj = JSON.parse(JSON.stringify(fulldata));
-
-          return res.status(200).json({
-            MusicStats: obj
-          });
-        })
-
-        .catch(err => {
-          let errmsg = "Error getting documents" + err;
-          return res.status(416).json({
-            error: errmsg
-          });
-        });
-    }
-  });
-});
-
 exports.deleteCollection = functions.https.onRequest((req, res) => {
   let deletions = [];
   let incomming = 0;
@@ -1134,7 +752,7 @@ exports.deleteCollection = functions.https.onRequest((req, res) => {
     });
 });
 
-// TODO : Change for authentication component token verification
+// TODO: Change for authentication component token verification
 exports.tempDigiMe = functions.https.onRequest((req, res) => {
   //console.log(req.body.data);
   let obj = req.body.data;
@@ -1241,7 +859,7 @@ exports.tempDigiMe = functions.https.onRequest((req, res) => {
     }
   });
 });
-
+// TODO: Change for authentication component token verification
 exports.tempData = functions.https.onRequest((req, res) => {
   let obj = req.body.data;
 
@@ -1375,6 +993,7 @@ exports.getFitbit = functions.https.onRequest((req, res) => {
   });
 });
 
+//Search for users
 exports.getUserInfo = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
     let uid = req.query.id;
@@ -1395,6 +1014,7 @@ exports.getUserInfo = functions.https.onRequest((req, res) => {
   });
 });
 
+// TODO: Endre navn, og oppdater i frontend
 exports.getMusicWeekDigiB = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
     const query = db.collection("Music");
@@ -1563,7 +1183,7 @@ exports.getMusicWeekDigiB = functions.https.onRequest((req, res) => {
     });
   });
 });
-
+//Used for developing the token auth
 exports.getProfile = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
     // idToken comes from the client app
@@ -1930,6 +1550,7 @@ exports.getMusicAndMood = functions.https.onRequest((req, res) => {
           var musicResult = [];
           let musicQuery = db.collection("Music");
 
+          // eslint-disable-next-line promise/no-nesting
           let music = musicQuery
             .where("userID", "==", getUser)
             .get()
@@ -1957,6 +1578,7 @@ exports.getMusicAndMood = functions.https.onRequest((req, res) => {
           let moodResult = [];
           let moodQuery = db.collection("Mood");
 
+          // eslint-disable-next-line promise/no-nesting
           let mood = moodQuery
             .where("userID", "==", getUser)
             .get()
@@ -1986,6 +1608,7 @@ exports.getMusicAndMood = functions.https.onRequest((req, res) => {
          */
     
         // Run fitbit getter and set object for adding to database
+        // eslint-disable-next-line promise/no-nesting
         Promise.all([getMusic(getUser), getMood(getUser)]).then(result => {
           for (item in result) {
             let dataObj = {};
