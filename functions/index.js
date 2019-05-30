@@ -1425,11 +1425,105 @@ exports.getAllMood = functions.https.onRequest((req, res) => {
 
 exports.getAllFrontpage = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
-    let sleepResult = [];
-    let nutritionResult = [];
-    let activityResult = [];
+    const idToken = req.headers["authorization"].split("Bearer ")[1];
+    console.log(idToken);
 
-    let getuser = req.query.userID;
+    const verifyer = verifyToken(idToken);
+    verifyer.then(verify => {
+      console.log("Promise result ", verifyer);
+
+      function getFitbit(paraUser, begintime, endtime) {
+     
+        return new Promise((resolve, reject) => {
+          let activityResult = [];
+          let activityQuery = db.collection("Fitbit");
+  
+          let fitbit = activityQuery
+            .where("userID", "==", paraUser)
+            .where("timestamp", ">", begintime.timestamp)
+            .where("timestamp", "<", endtime.timestamp)
+            .get()
+            .then(snapshot => {
+              if (snapshot.empty) {
+                console.log("error getting fitbit");
+              }
+              snapshot.forEach(doc => {
+                activityResult.push(doc.data());
+              });
+            })
+            .then(() => {
+              resolve({ activity: activityResult });
+            })
+            .catch(err => {
+              console.log("Error getting document from music", err);
+              reject(err);
+              return err;
+            });
+        });
+      }
+      /*Function for getting the fitbit objects from temp fitbit collection
+       */
+      function getSleep(paraUser, begintime, endtime) {
+        return new Promise((resolve, reject) => {
+          var sleepResult = [];
+          let sleepQuery = db.collection("Sleep");
+  
+          let sleep = sleepQuery
+            .where("userID", "==", paraUser)
+            .where("timestamp", ">", begintime.timestamp)
+            .where("timestamp", "<", endtime.timestamp)
+            .get()
+            .then(snapshot => {
+              if (snapshot.empty) {
+                console.log("Ërror getting sleep");
+              }
+              snapshot.forEach(doc => {
+                sleepResult.push(doc.data());
+              });
+            })
+            .then(() => {
+              resolve({ sleep: sleepResult });
+            })
+            .catch(err => {
+              console.log("Error getting document from sleep", err);
+              reject(err);
+              return err;
+            });
+        });
+      }
+      function getNutrition(paraUser, begintime, endtime) {
+        return new Promise((resolve, reject) => {
+          let nutritionResult = [];
+          let nutritionQuery = db.collection("Nutrition");
+  
+          let nutrition = nutritionQuery
+            .where("userID", "==", paraUser)
+            .where("timestamp", ">", begintime.timestamp)
+            .where("timestamp", "<", endtime.timestamp)
+            .get()
+            .then(snapshot => {
+              if (snapshot.empty) {
+                console.log("Nutrition fail document");
+              }
+              snapshot.forEach(doc => {
+                nutritionResult.push(doc.data());
+              });
+            })
+            .then(() => {
+              resolve({ nutrition: nutritionResult });
+            })
+            .catch(err => {
+              console.log("Error getting document from sleep", err);
+              reject(err);
+              return err;
+            });
+        });
+      }
+
+      if (verify.authenticated === true) {
+        const getUser = verify.userid;
+
+  
     let timeStamp = req.query.timestamp;
 
     let begintime = timestampHandler(timeStamp, "BEGINTIME");
@@ -1438,95 +1532,9 @@ exports.getAllFrontpage = functions.https.onRequest((req, res) => {
     console.log(begintime.timestamp);
     console.log(endtime.timestamp);
 
-    function getFitbit() {
-      return new Promise((resolve, reject) => {
-        let activityResult = [];
-        let activityQuery = db.collection("Fitbit");
-
-        let fitbit = activityQuery
-          .where("userID", "==", getuser)
-          .where("timestamp", ">", begintime.timestamp)
-          .where("timestamp", "<", endtime.timestamp)
-          .get()
-          .then(snapshot => {
-            if (snapshot.empty) {
-              console.log("error getting fitbit");
-            }
-            snapshot.forEach(doc => {
-              activityResult.push(doc.data());
-            });
-          })
-          .then(() => {
-            resolve({ activity: activityResult });
-          })
-          .catch(err => {
-            console.log("Error getting document from music", err);
-            reject(err);
-            return err;
-          });
-      });
-    }
-    /*Function for getting the fitbit objects from temp fitbit collection
-     */
-    function getSleep() {
-      return new Promise((resolve, reject) => {
-        var sleepResult = [];
-        let sleepQuery = db.collection("Sleep");
-
-        let sleep = sleepQuery
-          .where("userID", "==", getuser)
-          .where("timestamp", ">", begintime.timestamp)
-          .where("timestamp", "<", endtime.timestamp)
-          .get()
-          .then(snapshot => {
-            if (snapshot.empty) {
-              console.log("Ërror getting sleep");
-            }
-            snapshot.forEach(doc => {
-              sleepResult.push(doc.data());
-            });
-          })
-          .then(() => {
-            resolve({ sleep: sleepResult });
-          })
-          .catch(err => {
-            console.log("Error getting document from sleep", err);
-            reject(err);
-            return err;
-          });
-      });
-    }
-    function getNutrition() {
-      return new Promise((resolve, reject) => {
-        let nutritionResult = [];
-        let nutritionQuery = db.collection("Nutrition");
-
-        let nutrition = nutritionQuery
-          .where("userID", "==", getuser)
-          .where("timestamp", ">", begintime.timestamp)
-          .where("timestamp", "<", endtime.timestamp)
-          .get()
-          .then(snapshot => {
-            if (snapshot.empty) {
-              console.log("Nutrition fail document");
-            }
-            snapshot.forEach(doc => {
-              nutritionResult.push(doc.data());
-            });
-          })
-          .then(() => {
-            resolve({ nutrition: nutritionResult });
-          })
-          .catch(err => {
-            console.log("Error getting document from sleep", err);
-            reject(err);
-            return err;
-          });
-      });
-    }
 
     // Run fitbit getter and set object for adding to database
-    Promise.all([getFitbit(), getSleep(), getNutrition()]).then(result => {
+    Promise.all([getFitbit(getUser, begintime, endtime), getSleep(getUser, begintime, endtime), getNutrition(getUser, begintime, endtime)]).then(result => {
       for (item in result) {
         let dataObj = {};
         console.log(result[item]);
@@ -1537,6 +1545,7 @@ exports.getAllFrontpage = functions.https.onRequest((req, res) => {
         result: result
       });
     });
+  }});
   });
 });
 
@@ -1632,3 +1641,4 @@ exports.getMusicAndMood = functions.https.onRequest((req, res) => {
     });
   });
 });
+
