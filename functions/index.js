@@ -1,6 +1,6 @@
 /* eslint-disable promise/always-return */
 /* eslint-disable promise/catch-or-return */
-//https://us-central1-mmfapp-3603c.cloudfunctions.net/addMessage?text=
+//https://us-central1-mmfapp-3603c.cloudfunctions.net/
 // The Cloud Functions for Firebase SDK to create Cloud Functions and setup triggers.
 const functions = require("firebase-functions");
 const cors = require("cors")({ origin: true });
@@ -20,41 +20,36 @@ const runtimeOpts = {
 const BEGINTIME = "T00:00:00";
 const ENDTIME = "T23:59:59";
 
-// Function for registering mood
+// Function for registering mood, insert data into mood collection
 exports.registerMood = functions.https.onRequest((req, res) => {
-  // const getMood = req.query.mood;
-  // const getUser = req.query.user;
+
+  // Get body from post with data for mood
   var getData = req.body.data;
   console.log(getData.data);
-  // cors wrapper for cross platform(app) access
   let time = timestampHandler(getData.timestamp);
   getData.timestamp = time.timestamp;
   getData.week = time.week;
   getData.weekday = time.weekday;
   cors(req, res, () => {
     const idToken = req.headers["authorization"].split("Bearer ")[1];
-    console.log(idToken);
-
+    // calls verifytoken with the idToken from Header
     const verifyer = verifyToken(idToken);
-    verifyer.then(verify => {
-      console.log("Promise result ", verifyer);
 
+    verifyer.then(verify => {
       if (verify.authenticated === true) {
         const getUser = verify.userid;
         getData.userID = getUser;
-        console.log("her er user:", getUser);
         if (getUser === undefined) {
           return res.status(401).json({
             error: "User is undefined"
           });
         } else {
           if (req.method !== "POST") {
-            return res.status(420).json({
+            return res.status(405).json({
               message: "Only POST allowed"
             });
           } else {
             let collection = "Mood";
-            // let setDoc = db.collection(collection).doc(getUser).set(data);
             // eslint-disable-next-line promise/no-nesting
             let register = db
               .collection(collection)
@@ -64,22 +59,12 @@ exports.registerMood = functions.https.onRequest((req, res) => {
                 return res.status(200).json({
                   toCollection: collection,
                   registeredData: getData
-                  // toUser: getUser,
-                  // toMood: getMood,
-                  // queryRes: result,
-                  // comment: getData
                 });
               });
           }
         }
       }
     });
-
-    // let data = {
-    //   user: getUser,
-    //   mood: getMood,
-    //   time: getTime
-    // };
   });
 });
 
@@ -87,7 +72,6 @@ exports.registerMood = functions.https.onRequest((req, res) => {
 // Listen for creation of documents in the 'mood' collection
 // Initiate spotify call from here
 exports.registerData = functions.firestore
-  // .runWith(runtimeOpts)
   .document("Mood/{userID}")
   .onCreate((snap, context) => {
     // Get an object representing the document
@@ -98,53 +82,34 @@ exports.registerData = functions.firestore
     // access a particular field as you would any JS property
     let userID = newValue.userID;
     let mood = newValue.mood;
+  
+    // String for song ID's built by function
     let songs = "";
+
+    // Array for song objects that should be deleted after queries are complete
     let deleteSongs = [];
+    // Array for fitbit objects that should be deleted after queries are complete
     var deleteFitbit = [];
-    // Spotify identifyer information and new object to use for calls
+
+    /* Spotify identifyer information and new object to use for calls
+    * TODO: Needs to be updated to correct ID and SECRET, temporary user authentication,
+    * Visit developer.spotify.com
+    */
     var spotify = new Spotify({
       id: "462be484f8f245d896aa9ebb64ffa482",
       secret: "b6b6d1b122ed4f2b8ae0ea1c1a826c1f"
     });
-    // let query = db.collection("users").doc(userID);
-
-    /* Function for database call to get user information
-     */
-    function getSpotifyID() {
-      return new Promise((resolve, reject) => {
-        query
-          .get()
-          .then(doc => {
-            if (!doc.exists) {
-              console.log("No such document!");
-              reject(err);
-              return err;
-            } else {
-              console.log("Document data:", doc.data());
-              let songObj = {};
-              songObj["spotifyID"] = doc.get("spotifyID");
-              resolve(songObj);
-              return songObj;
-            }
-          })
-          .catch(err => {
-            console.log("Error getting document", err);
-            reject(err);
-            return err;
-          });
-      });
-    }
 
     /* Function for API call to spotify for getting audio features from track
     @param {string} id - id of song to be queried for
+    @return/resolve Array of result as promise
     */
     function getAudioFeatures(id) {
       return new Promise((resolve, reject) => {
-        console.log("Started audio features analysis with ", songs, " : ", id);
+        // console.log("Started audio features analysis with ", id);
         spotify
           .request("https://api.spotify.com/v1/audio-features?ids=" + id)
           .then(data => {
-            console.log("Spotify data: ", data);
             let songObj = {};
             Object.assign(songObj, data.audio_features);
             resolve(songObj);
@@ -158,31 +123,9 @@ exports.registerData = functions.firestore
       });
     }
 
-    /* Function for API call to spotify for getting track features
-    @param {string} id - id of song to be queried for
+    /* Function for gettings songs form temp music collection. And build song ID string for query to spotify
+    @return/resolve array of result data as promise
     */
-    function getTrack(id) {
-      return new Promise((resolve, reject) => {
-        console.log("Started shit");
-        spotify
-          .request("https://api.spotify.com/v1/tracks/" + id)
-          .then(data => {
-            console.log("Spotify track data: ", data);
-            let songObj = {};
-            // songObj["title"] = data.name;
-            // songObj["artist"] = data.artists[0].name;
-            resolve(songObj);
-            return songObj;
-          })
-          .catch(err => {
-            console.error("Error occurred: " + err);
-            reject(err);
-            return err;
-          });
-      });
-    }
-
-    // Promise for gettings songs form temp music collection.
     function getSongs() {
       return new Promise((resolve, reject) => {
         var spotres = [];
@@ -195,9 +138,6 @@ exports.registerData = functions.firestore
           .get()
           .then(querySnapshot => {
             querySnapshot.forEach(doc => {
-              // doc.data() is never undefined for query doc snapshots
-              // console.log(doc.id, " => ", doc.data());
-              // console.log("Document data:", doc.data());
               deleteSongs.push(doc.id);
 
               if (songs === "") {
@@ -221,6 +161,7 @@ exports.registerData = functions.firestore
       });
     }
     /*Function for getting the fitbit objects from temp fitbit collection
+    @return/resolve array of fitbit objects as promise
      */
     function getFitbit() {
       var fitRes = [];
@@ -247,16 +188,12 @@ exports.registerData = functions.firestore
       });
     }
 
-    // Run fitbit getter and set object for adding to database
+    // Run fitbit functions and set object for adding to database
     Promise.all([getFitbit()]).then(res => {
-      // console.log(res);
       res = res[0];
-      // console.log(res);
       for (item in res) {
         let dataObj = {};
-        // console.log(res[item]);
         let fitObj = res[item];
-        // dataObj.activityname = fitObj.activityname;
 
         dataObj.calories = fitObj.caloriesout;
         dataObj.timestamp = fitObj.timestamp;
@@ -272,50 +209,37 @@ exports.registerData = functions.firestore
           fitObj.week.toString() +
           fitObj.weekday.toString() +
           fitObj.userID;
-        // console.log(docID);
         // eslint-disable-next-line promise/no-nesting
         db.collection("Fitbit")
           .doc(docID)
           .create(dataObj)
           // eslint-disable-next-line no-loop-func
           .then(() => {
-            // console.log("Adding this: ", dataObj);
             console.log("Fitbit Document updated or written with ID: ", docID);
-            // console.log("With content: ", docRef);
-            // return docRef;
           })
           // eslint-disable-next-line no-loop-func
           .catch(error => {
-            // console.error("Error adding document: ", error);
-            // return error;
+            console.log("Error adding document: ", error);
           });
       }
-      //DELETE fitbit
+      //DELETE fitbit objects in temp collection for user
       for (item in deleteFitbit) {
-        // console.log("DELETING:> ", item, " or ", deleteSongs[item]);
         db.collection("TempFitBit")
           .doc(deleteFitbit[item])
           .delete();
       }
     });
+    
     // Promise resolving getSongs then handle the data from both getters. Resolve on adding merged item to database.
     Promise.all([getSongs()]).then(res => {
       // eslint-disable-next-line promise/no-nesting
       getAudioFeatures(songs).then(audioFeatures => {
-        // console.log(songs);
-        // console.log("Songs:> ", res);
-        // console.log(res[0]);
-
         let tracks = res[0];
-        // console.log(audioFeatures);
         for (item = 0; item < 3; item++) {
-          // for (item in audioFeatures) {
           let songObj = {};
           songObj["energy"] = audioFeatures[item].energy;
           songObj["danceability"] = audioFeatures[item].danceability;
           songObj["valence"] = audioFeatures[item].valence;
-          // console.log(audioFeatures[item]);
-          // Object.assign(dataObj, audioFeatures[item], tracks[item]);
           let artists = tracks[item].artists;
           let artistFull = "";
           for (artist in artists) {
@@ -334,21 +258,12 @@ exports.registerData = functions.firestore
           songObj.weekday = tracks[item].weekday;
           songObj.year = tracks[item].year;
           songObj.mood = mood;
-          // console.log(artistFull);
-          // Object.assign(dataObj, songObj, tracks[item]);
-          // console.log(res[0].item.toString());
-          // Object.assign(songObj, res[item], audioFeatures[item]);
-          // console.log(songObj);
           // eslint-disable-next-line promise/no-nesting
           db.collection("Music")
             .add(songObj)
-
             // eslint-disable-next-line no-loop-func
             .then(docRef => {
-              // console.log("Adding this: ", dataObj);
               console.log("Spotify Document written with ID: ", docRef.id);
-              // console.log("With content: ", docRef);
-              // return docRef;
             })
             // eslint-disable-next-line no-loop-func
             .catch(error => {
@@ -356,9 +271,8 @@ exports.registerData = functions.firestore
               return error;
             });
         }
-        // console.log(dataObj);
-        for (item in deleteSongs) {
-          // console.log("DELETING:> ", item, " or ", deleteSongs[item]);
+      //DELETE song objects in temp collection for user
+      for (item in deleteSongs) {
           db.collection("TempMusic")
             .doc(deleteSongs[item])
             .delete();
@@ -366,241 +280,6 @@ exports.registerData = functions.firestore
       });
     });
   });
-
-// Function for querying music collection
-exports.getMusic = functions.https.onRequest((req, res) => {
-  cors(req, res, () => {
-    const getUser = req.query.userID;
-    const getMood = req.query.mood;
-    const getType = req.query.type;
-    const query = db.collection("Music");
-
-    // Get specific mood by user
-    if (getUser !== undefined && getMood !== undefined) {
-      let result = [];
-      let users = query
-        .where("userID", "==", getUser)
-        .where("mood", "==", getMood)
-        .get()
-        .then(snapshot => {
-          if (snapshot.empty) {
-            return res.status(418).json({
-              error: "No matching documents."
-            });
-          }
-          snapshot.forEach(doc => {
-            console.log(doc.id, "=>", doc.data());
-            result.push(doc.data());
-          });
-          return res.status(200).json({
-            restRes: result
-          });
-        })
-        .catch(err => {
-          let errmsg = "Error getting documents" + err;
-          return (res.status(420).json = {
-            error: errmsg
-          });
-        });
-    }
-    // Get all music from user
-    if (getUser !== undefined && getMood === undefined) {
-      let result = [];
-      let users = query
-        .where("userID", "==", getUser)
-        .get()
-        .then(snapshot => {
-          if (snapshot.empty) {
-            return res.status(418).json({
-              error: "No matching documents."
-            });
-          }
-          snapshot.forEach(doc => {
-            console.log(doc.id, "=>", doc.data());
-            result.push(doc.data());
-          });
-          return res.status(200).json({
-            restRes: result
-          });
-        })
-        .catch(err => {
-          let errmsg = "Error getting documents" + err;
-          return (res.status(420).json = {
-            error: errmsg
-          });
-        });
-    }
-
-    // return res.status(200).json({
-    //   searchFor: getUser,
-    //   queryRes: result
-
-    // });
-  });
-});
-
-exports.getMood = functions.https.onRequest((req, res) => {
-  let collection = "Mood";
-  let getMood = db.collection(collection);
-  let result = [];
-
-  cors(req, res, () => {
-    if (req.method !== "GET") {
-      return res.status(420).json({
-        message: "Only GET allowed"
-      });
-    }
-
-    getMood
-      .get()
-      .then(snapshot => {
-        snapshot.forEach(doc => {
-          console.log(doc.id, "=>", doc.data());
-          result.push(doc.data());
-        });
-        return res.status(200).json({ Mood: result });
-      })
-      .catch(err => {
-        console.log("Error getting documents", err);
-      });
-  });
-});
-
-//Gnurt:
-
-exports.getDailyMusic = functions.https.onRequest((req, res) => {
-  cors(req, res, () => {
-    const query = db.collection("DailyMusic");
-
-    // const getSong = req.query.Song;
-    // const getArtist = req.query.Artist;
-    const getDateListened = req.query.DateListened;
-    const getUser = req.query.UserID;
-    //let date = new Date(getDateListened);
-
-    if (getUser !== undefined && getDateListened !== undefined) {
-      let result = [];
-      let users = query
-        .where("UserID", "==", getUser)
-        .where("DateListened", "==", getDateListened)
-        .get()
-        .then(snapshot => {
-          if (snapshot.empty) {
-            return res.status(413).json({
-              error: "No matching documents"
-            });
-          }
-          snapshot.forEach(doc => {
-            console.log("Song found");
-            result.push(doc.data());
-          });
-          return res.status(200).json({
-            Songsfordate: result
-          });
-        })
-        .catch(err => {
-          let errmsg = "error getting docs" + err;
-          return res.status(416).json({
-            error: errmsg
-          });
-        });
-    }
-    if (getUser !== undefined && getDateListened === undefined) {
-      let result = [];
-
-      let users = query
-        .where("UserID", "==", getUser)
-        .get()
-        .then(snapshot => {
-          if (snapshot.emtpy) {
-            return res.status(404).json({
-              error: "No match."
-            });
-          }
-          snapshot.forEach(doc => {
-            console.log("Song found");
-            result.push(doc.data());
-          });
-          return res.status(200).json({
-            Songs: result
-          });
-        })
-        .catch(err => {
-          let errmsg = "Error getting documents" + err;
-          return res.status(418).json({
-            error: errmsg
-          });
-        });
-    }
-  });
-});
-
-//Slette?
-exports.timetest = functions.https.onRequest((req, res) => {
-  if (req.method !== "GET") {
-    return res.status(405).send(`${req.method} method not allowed`);
-  }
-
-  /** if a query parameter doesn't arrive in the request, use a default fallback */
-  // console.log("before: " + date);
-  let date = req.query.date;
-  let userID = req.query.user;
-  // console.log("after: " + date);
-  let beginTime = timestampHandler(date, "BEGINTIME");
-  let endTime = timestampHandler(date, "ENDTIME");
-  console.log("timeStamp: " + beginTime.toDate());
-
-  let resTime = "";
-  let collection = "Mood";
-  // var addTime = db
-  //   .collection(collection)
-  //   .doc("timetest1")
-  //   .set({ timestamp: firetime });
-
-  let newRes = db
-    .collection(collection)
-    .where("timestamp", ">", beginTime.timestamp)
-    .where("timestamp", "<", endTime.timestamp)
-    .where("userID", "==", userID)
-    .get()
-    .then(snapshot => {
-      snapshot.forEach(doc => {
-        // doc.data() is never undefined for query doc snapshots
-        console.log(doc.id, " => ", doc.data());
-        console.log(doc.get("timestamp").toDate());
-      });
-      return true;
-    })
-    .catch(error => {
-      console.log("Error getting documents: ", error);
-      return "test";
-    });
-
-  var getTime = db.collection(collection).doc("timetest1");
-  var getDoc = getTime
-    .get()
-    .then(doc => {
-      if (!doc.exists) {
-        console.log("No such document!");
-        return false;
-      } else {
-        // console.log("Document data:", doc.data());
-        resTime = doc.get("timestamp");
-        // console.log("Got time: " + resTime.toDate());
-        // console.log(resTime.toMillis());
-        return res.status(418).json({
-          data: doc.data(),
-          actualDate: date,
-          fireStoreTime: beginTime.toDate(),
-          endTime: endTime.toDate()
-          // momented: moment.unix(firetime.toMillis()).format("DD/MM/YYYY HH:mm")
-        });
-      }
-    })
-    .catch(err => {
-      console.log("Error getting document", err);
-    });
-});
 
 /*Function for adding timestamp to input without timestamp
 @param {string/number} timestamp - timestamp in format "YYYY-MM-DD" / alternative full format: "YYYY-MM-DDTHH:MM:SS" where SS is optional
@@ -617,7 +296,11 @@ function timestampHandler(timestamp, type) {
     time = "T22:22:22";
   }
 
+  /* Checks if timestamp is not undefined and length is under 10
+    This to verify it is not complete unix ms timestamp or in format of YYYY-MM-DDTHH:MM
+  */
   if (timestamp !== undefined && timestamp.toString().length <= 10) {
+    // If time is set, it will be added for START or END times * Used for day queries
     if (time !== "") {
       let fullTime = {};
       fullTime["timestamp"] = firedate = admin.firestore.Timestamp.fromDate(
@@ -638,8 +321,8 @@ function timestampHandler(timestamp, type) {
       return fullTime;
     }
   } else {
+    // Sets new timestamp from full unix timestamp or full date format of: YYYY-MM-DDTHH:MM
     let fullTime = {};
-    // console.log(typeof timestamp);
     if (typeof timestamp === "number") {
       fullTime["timestamp"] = firedate = admin.firestore.Timestamp.fromMillis(
         timestamp
@@ -655,28 +338,19 @@ function timestampHandler(timestamp, type) {
 
     return fullTime;
   }
-
-  //  console.log(date2);
 }
 
-exports.getDailyMoodUnix = functions.https.onRequest((req, res) => {
+// Get mood for one day from timestamp of user
+exports.getDailyMood = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
     let query = db.collection("Mood");
-
-    //let getuser = req.query.userID;
     let timeStamp = req.query.timestamp;
-    console.log(timeStamp);
 
     let unixStart = timestampHandler(timeStamp, "BEGINTIME");
     let unixEnd = timestampHandler(timeStamp, "ENDTIME");
-
-    console.log(unixStart.timestamp);
-    console.log(unixEnd.timestamp);
-
     const idToken = req.headers["authorization"].split("Bearer ")[1];
-    console.log(idToken);
 
-    // calls verifytoken() with the idToken from Header
+
     const verifyer = verifyToken(idToken);
     verifyer.then(verify => {
       console.log("Promise result ", verifyer);
@@ -694,7 +368,7 @@ exports.getDailyMoodUnix = functions.https.onRequest((req, res) => {
             .get()
             .then(snapshot => {
               if (snapshot.empty) {
-                return res.status(413).json({
+                return res.status(404).json({
                   error: "No matching documents"
                 });
               }
@@ -705,10 +379,9 @@ exports.getDailyMoodUnix = functions.https.onRequest((req, res) => {
                 Mood: result
               });
             })
-
             .catch(err => {
               let errmsg = "error getting docs," + err;
-              return res.status(416).json({
+              return res.status(500).json({
                 error2: errmsg
               });
             });
@@ -718,6 +391,7 @@ exports.getDailyMoodUnix = functions.https.onRequest((req, res) => {
   });
 });
 
+// Manual deletion of collections *Used for testing and purging of collections
 exports.deleteCollection = functions.https.onRequest((req, res) => {
   let deletions = [];
   let incomming = 0;
@@ -726,13 +400,11 @@ exports.deleteCollection = functions.https.onRequest((req, res) => {
     .get()
     .then(snapshot => {
       snapshot.forEach(doc => {
-        // console.log(doc.id);
         deletions.push(doc.id);
         incomming++;
       });
     })
     .then(() => {
-      console.log("Deleting this many: ", incomming);
       for (doc in deletions) {
         db.collection(req.query.collection)
           .doc(deletions[doc])
@@ -741,7 +413,6 @@ exports.deleteCollection = functions.https.onRequest((req, res) => {
       }
     })
     .then(() => {
-      console.log("Deleted this many: ", deleted);
       return res.status(200).json({
         Deleted: deleted,
         Incomming: incomming
@@ -752,9 +423,10 @@ exports.deleteCollection = functions.https.onRequest((req, res) => {
     });
 });
 
-// TODO: Change for authentication component token verification
+// Function for adding DigiMe data from client side to a temporary collection
 exports.tempDigiMe = functions.https.onRequest((req, res) => {
-  //console.log(req.body.data);
+
+  // obj [body] is actual filedata recieved from digi.me in form of JSON string objects
   let obj = req.body.data;
   const verifyer = verifyToken(idToken);
   verifyer.then(verify => {
@@ -768,18 +440,11 @@ exports.tempDigiMe = functions.https.onRequest((req, res) => {
         console.log(JSON.parse(obj[entry]));
         Object.assign(DigiObj, JSON.parse(obj[entry]));
       }
-      // for (const key of Object.keys(obj)) {
-      //   console.log(key, obj[key]);
-      // }
-      // var DigiObj = JSON.parse(obj);
-      console.log("AFTER", DigiObj);
-      // console.log(DigiObj.length);
-
       cors(req, res, () => {
         let promises = [];
         let fitPromises = [];
         if (req.method !== "POST") {
-          return res.status(420).json({
+          return res.status(405).json({
             message: "Only POST allowed"
           });
         } else {
@@ -788,18 +453,9 @@ exports.tempDigiMe = functions.https.onRequest((req, res) => {
               var resObj = {};
               var spotifyObj = DigiObj.spotify;
               for (items in spotifyObj) {
-                // console.log(items);
                 let oneSong = spotifyObj[items];
-                // console.log(oneSong);
-                // console.log(items);
-                //console.log(DigiObj[items]);
-                // console.log(MusicObj[0][items]);
-
-                // console.log(MusicObj[items].track);
                 let trackObj = spotifyObj[items].track;
                 let dataObj = {};
-                // const getUser = req.query.userID;
-                // const getTime = req.query.timestamp;
                 const getTime = spotifyObj[items].createddate;
                 let time = timestampHandler(getTime);
                 dataObj["userID"] = getUser;
@@ -846,7 +502,6 @@ exports.tempDigiMe = functions.https.onRequest((req, res) => {
                       // eslint-disable-next-line no-loop-func
                       .then(ref => {
                         console.log("Added document with ID: ", ref.id);
-                        // Object.assign(resObj, fitbitObj[items]);
                         resolve();
                       });
                   });
@@ -857,7 +512,6 @@ exports.tempDigiMe = functions.https.onRequest((req, res) => {
 
           // eslint-disable-next-line promise/no-nesting
           Promise.all(fitPromises, promises).then(() => {
-            console.log("All resolved");
             return res.status(200).json({
               DataAdded: "ok"
             });
@@ -867,66 +521,20 @@ exports.tempDigiMe = functions.https.onRequest((req, res) => {
     }
   });
 });
-// TODO: Change for authentication component token verification
-exports.tempData = functions.https.onRequest((req, res) => {
-  let obj = req.body.data;
 
-  var DigiObj = {};
-  for (entry in obj) {
-    console.log(JSON.parse(obj[entry]));
-    Object.assign(DigiObj, JSON.parse(obj[entry]));
-  }
-
-  cors(req, res, () => {
-    let promises = [];
-    if (req.method !== "POST") {
-      return res.status(420).json({
-        message: "Only POST allowed"
-      });
-    } else {
-      let dataObj = {};
-      const getUser = req.query.userID;
-      dataObj["userID"] = getUser;
-      let collection = "TempData";
-      var register = new Promise(resolve => {
-        promises.push(register);
-        db.collection(collection)
-          .add(DigiObj)
-          .then(ref => {
-            console.log("Added document with ID: ", ref.id);
-            Object.assign(dataObj);
-            resolve();
-          });
-      });
-    }
-    Promise.all(promises).then(() => {
-      return res.status(200).json({
-        DataAdded: "ok"
-      });
-    });
-  });
-});
-
+// Get activity for one user
 exports.getFitbit = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
-    //const getUser = req.query.userID;
     const idToken = req.headers["authorization"].split("Bearer ")[1];
-    console.log(idToken);
     const getWeek = parseInt(req.query.weekID);
-    console.log("Her er uken: " + getWeek);
-
     const query = db.collection("Fitbit");
 
-    // calls verifytoken with the idToken from Header
+    
     const verifyer = verifyToken(idToken);
     verifyer.then(verify => {
-      console.log("Promise result ", verifyer);
 
       if (verify.authenticated === true) {
         const getUser = verify.userid;
-
-        console.log("her er user:", getUser);
-
         let result = [];
         // eslint-disable-next-line promise/no-nesting
         let users = query
@@ -935,7 +543,6 @@ exports.getFitbit = functions.https.onRequest((req, res) => {
           .get()
           .then(snapshot => {
             snapshot.forEach(doc => {
-              console.log(doc.id, "=>", doc.data());
               result.push(doc.data());
             });
             if (snapshot.empty) {
@@ -949,63 +556,19 @@ exports.getFitbit = functions.https.onRequest((req, res) => {
           })
           .catch(err => {
             let errmsg = "Error getting documents" + err;
-            return (res.status(420).json = {
+            return (res.status(500).json = {
               error: errmsg
             });
           });
-
-        // if user is undefined
-
-        if (getUser === undefined) {
-          return res.status(401).json({
-            error: "User is undefined"
-          });
-        }
-        /*
-    // Get all fit from user
-    if (getUser !== undefined && getWeek === undefined) {
-      let result = [];
-      // eslint-disable-next-line promise/no-nesting
-      let users = query
-        .where("userID", "==", getUser)
-        .get()
-        .then(snapshot => {
-          if (snapshot.empty) {
-            return res.status(418).json({
-              error: "No matching documents."
-            });
-          }
-          snapshot.forEach(doc => {
-           
-            result.push(doc.data());
-          });
-          return res.status(200).json({
-            Fitbit: result
-          });
-        })
-        .catch(err => {
-          let errmsg = "Error getting documents" + err;
-          return (res.status(420).json = {
-            error: errmsg
-          });
-        });
-    }
-*/
-        // return res.status(200).json({
-        //   searchFor: getUser,
-        //   queryRes: result
-
-        // });
       }
     });
   });
 });
 
-//Search for users
+//Manual search for users which provides userRecord and info: getUserInfo?id=STRING
 exports.getUserInfo = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
     let uid = req.query.id;
-
     admin
       .auth()
       .getUser(uid)
@@ -1022,41 +585,31 @@ exports.getUserInfo = functions.https.onRequest((req, res) => {
   });
 });
 
+// Function for getting music data for one week.
 // TODO: Endre navn, og oppdater i frontend
-exports.getMusicWeekDigiB = functions.https.onRequest((req, res) => {
+exports.getMusicWeek = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
     const query = db.collection("Music");
     const getWeekID = parseInt(req.query.week);
     const idToken = req.headers["authorization"].split("Bearer ")[1];
-    console.log(idToken);
-    //const getUserID = req.query.userID;
 
-    // calls verifytoken with the idToken from Header
     const verifyer = verifyToken(idToken);
     verifyer.then(verify => {
-      console.log("Promise result ", verifyer);
 
       if (verify.authenticated === true) {
         const getUser = verify.userid;
-
-        console.log("her er user:", getUser);
         if (getUser === undefined) {
           return res.status(401).json({
             error: "User is undefined"
           });
         } else if (getWeekID !== undefined) {
-          let result = [];
           let valence = [];
           let energy = [];
           let danceability = [];
           let mood = [];
-          //  let tempmood = [];
-          let sum = 0;
           let fulldata = [];
           let date = [];
-          let array = [{ weekday: "1" }];
           let checker = [];
-          let counter = 0;
 
           // eslint-disable-next-line promise/no-nesting
           let music = query
@@ -1066,13 +619,11 @@ exports.getMusicWeekDigiB = functions.https.onRequest((req, res) => {
             .get()
             .then(snapshot => {
               if (snapshot.empty) {
-                return res.status(413).json({
+                return res.status(404).json({
                   error: "No document for this weekID"
                 });
               }
               snapshot.forEach(doc => {
-                //    array.push({weekday: doc.get("weekday")[0]});
-
                 day = doc.get("weekday");
                 unixTime = new Date(doc.get("timestamp")._seconds * 1000);
 
@@ -1090,15 +641,10 @@ exports.getMusicWeekDigiB = functions.https.onRequest((req, res) => {
                 );
                 mood.push(doc.get("weekday") + ":" + doc.get("mood"));
 
+                // Checks wether the doc/day is not already in array
                 if (!checker.includes(doc.get("weekday"))) {
                   checker.push(doc.get("weekday"));
                 }
-
-                checker.forEach(item => {
-                  if (doc.get("weekday") in checker) {
-                    counter++;
-                  }
-                });
               });
 
               while (checker.length) {
@@ -1109,13 +655,15 @@ exports.getMusicWeekDigiB = functions.https.onRequest((req, res) => {
                 var energyAntall = 0;
                 var danceabilityAntall = 0;
                 var tempdate = "";
-                let p = checker.pop();
-                //  var i = 0;
+
+                // gets next item/day in checker for processing
+                let popDay = checker.pop();
                 tempmood = [];
 
                 // eslint-disable-next-line no-loop-func
+                //Iterates over all items. Splits the strings items/days for processing.
                 mood.forEach(item => {
-                  if (parseInt(item.split(":")[0]) === p) {
+                  if (parseInt(item.split(":")[0]) === popDay) {
                     m = item.split(":")[1];
                     tempmood.push(m);
                   }
@@ -1123,15 +671,16 @@ exports.getMusicWeekDigiB = functions.https.onRequest((req, res) => {
 
                 // eslint-disable-next-line no-loop-func
                 date.forEach(item => {
-                  if (parseInt(item.split(":")[0]) === p) {
+                  if (parseInt(item.split(":")[0]) === popDay) {
                     d = item.split(":")[1];
                     tempdate = String(d);
                   }
                 });
 
                 // eslint-disable-next-line no-loop-func
+                // Sums the values for each day
                 valence.forEach(item => {
-                  if (parseInt(item.split(":")[0]) === p) {
+                  if (parseInt(item.split(":")[0]) === popDay) {
                     valenceSum = valenceSum + parseFloat(item.split(":")[1]);
                     valenceAntall++;
                   }
@@ -1142,7 +691,7 @@ exports.getMusicWeekDigiB = functions.https.onRequest((req, res) => {
 
                 // eslint-disable-next-line no-loop-func
                 energy.forEach(item => {
-                  if (parseInt(item.split(":")[0]) === p) {
+                  if (parseInt(item.split(":")[0]) === popDay) {
                     energySum = energySum + parseFloat(item.split(":")[1]);
                     energyAntall++;
                   }
@@ -1150,12 +699,9 @@ exports.getMusicWeekDigiB = functions.https.onRequest((req, res) => {
                 energySum = energySum / energyAntall;
                 var resultEnergy = energySum.toFixed(2) * 100;
 
-                var summen = 0;
-                var antall = 0;
-
                 // eslint-disable-next-line no-loop-func
                 danceability.forEach(item => {
-                  if (parseInt(item.split(":")[0]) === p) {
+                  if (parseInt(item.split(":")[0]) === popDay) {
                     danceabilitySum =
                       danceabilitySum + parseFloat(item.split(":")[1]);
                     danceabilityAntall++;
@@ -1168,7 +714,7 @@ exports.getMusicWeekDigiB = functions.https.onRequest((req, res) => {
                   Energy: resultEnergy,
                   Danceability: resultDanceability,
                   Valence: resultValence,
-                  weekday: p,
+                  weekday: popDay,
                   date: tempdate,
                   mood: tempmood
                 });
@@ -1179,10 +725,9 @@ exports.getMusicWeekDigiB = functions.https.onRequest((req, res) => {
                 MusicStats: obj
               });
             })
-
             .catch(err => {
               let errmsg = "Error getting documents" + err;
-              return res.status(416).json({
+              return res.status(500).json({
                 error: errmsg
               });
             });
@@ -1191,14 +736,13 @@ exports.getMusicWeekDigiB = functions.https.onRequest((req, res) => {
     });
   });
 });
+
 //Used for developing the token auth
 exports.getProfile = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
     // idToken comes from the client app
 
-    // const getUser = parseInt(req.query.userID);
     const query = db.collection("Profile");
-    //Splits the String so that Bearer goes away. TODO: Only allow if bearer is apart of the String
     const idToken = req.headers["authorization"].split("Bearer ")[1];
     console.log(idToken);
 
@@ -1217,7 +761,7 @@ exports.getProfile = functions.https.onRequest((req, res) => {
             .get()
             .then(snapshot => {
               if (snapshot.empty) {
-                return res.status(418).json({
+                return res.status(404).json({
                   error: "No matching documents."
                 });
               }
@@ -1231,7 +775,7 @@ exports.getProfile = functions.https.onRequest((req, res) => {
             })
             .catch(err => {
               let errmsg = "Error getting documents" + err;
-              return (res.status(420).json = {
+              return (res.status(500).json = {
                 error: errmsg
               });
             });
@@ -1241,6 +785,7 @@ exports.getProfile = functions.https.onRequest((req, res) => {
   });
 });
 
+// Function for verifying token with Firebase authentication
 function verifyToken(idToken) {
   return new Promise(resolve => {
     admin
@@ -1250,25 +795,15 @@ function verifyToken(idToken) {
         var uid = decodedToken.uid;
         console.log("uid er: " + uid);
         resolve({ authenticated: true, userid: uid });
-        // ...
       })
       .catch(error => {
-        // Handle error
         console.log("Error authenticating user", error);
         resolve({ authenticated: false, userid: "" });
       });
   });
-  // idToken comes from the client app
-
-  // Move to Funcs
-  // const getUser = parseInt(req.query.userID);
-  // //Splits the String so that Bearer goes away. TODO: Only allow if bearer is apart of the String
-  // const idToken = req.headers['authorization'].split('Bearer ')[1];
-  // console.log(idToken);
-
-  //verifies the token recieved with the header. TODO: Only respond with data that matches the uid..
 }
 
+// Gets all the music for data presentation in musictables
 exports.getAllMusic = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
     const query = db.collection("Music");
@@ -1280,7 +815,6 @@ exports.getAllMusic = functions.https.onRequest((req, res) => {
     let unixStart = timestampHandler(getTime, "BEGINTIME");
     let unixEnd = timestampHandler(getTime, "ENDTIME");
 
-    // calls verifytoken with the idToken from Header
     const verifyer = verifyToken(idToken);
     verifyer.then(verify => {
       console.log("Promise result ", verifyer);
@@ -1288,18 +822,12 @@ exports.getAllMusic = functions.https.onRequest((req, res) => {
       if (verify.authenticated === true) {
         const getUser = verify.userid;
 
-        console.log("her er user:", getUser);
-        if (getUser === undefined) {
-          return res.status(401).json({
-            error: "User is undefined"
-          });
-        }
         if (getTime === undefined) {
-          return res.status(401).json({
+          return res.status(400).json({
             error: "Error setting time"
           });
         }
-        // Get specific mood by user
+        // Get music from specific moods by user. Builds and returns objects
         else {
           let result = [];
           let happy = [];
@@ -1313,39 +841,35 @@ exports.getAllMusic = functions.https.onRequest((req, res) => {
             .get()
             .then(snapshot => {
               if (snapshot.empty) {
-                return res.status(418).json({
+                return res.status(404).json({
                   error: "No matching documents."
                 });
               }
               snapshot.forEach(doc => {
-                //result.push(doc.data());
-
-                if (doc.get("mood") === "happy") {
+                if (doc.get("mood").toLowerCase() === "happy") {
                   happy.push(doc.data());
-                } else if (doc.get("mood") === "sad") {
+                } else if (doc.get("mood").toLowerCase() === "excellent") {
+                  happy.push(doc.data());
+                }else if (doc.get("mood").toLowerCase() === "sad") {
                   sad.push(doc.data());
-                } else {
+                } else if (doc.get("mood").toLowerCase() === "terrible") {
+                  sad.push(doc.data());
+                }else {
                   neutral.push(doc.data());
                 }
               });
-              console.log("HAPPY : " + happy);
-              console.log("SAD : " + sad);
-              console.log("NEUTRAL:" + neutral);
-
               result = {
                 happy: happy,
                 sad: sad,
                 neutral: neutral
               };
-
               return res.status(200).json({
                 Mood: result
               });
             })
-
             .catch(err => {
               let errmsg = "error getting docs," + err;
-              return res.status(416).json({
+              return res.status(500).json({
                 error2: errmsg
               });
             });
@@ -1355,85 +879,14 @@ exports.getAllMusic = functions.https.onRequest((req, res) => {
   });
 });
 
-exports.getAllMood = functions.https.onRequest((req, res) => {
-  cors(req, res, () => {
-    const idToken = req.headers["authorization"].split("Bearer ")[1];
-    console.log(idToken);
-
-    let query = db.collection("Mood");
-    //let getUser = req.query.userID;
-    let array = [];
-
-    const verifyer = verifyToken(idToken);
-    verifyer.then(verify => {
-      console.log("Promise result ", verifyer);
-
-      if (verify.authenticated === true) {
-        const getUser = verify.userid;
-
-        let result = [];
-        // eslint-disable-next-line promise/no-nesting
-        let users = query
-          .where("userID", "==", getUser)
-          .get()
-          .then(snapshot => {
-            if (snapshot.empty) {
-              return res.status(413).json({
-                error: "No matching documents"
-              });
-            }
-            snapshot.forEach(doc => {
-              function Unix_timestamp(t) {
-                var dt = new Date(t * 1000);
-                var year = dt.getFullYear();
-                var m = String(dt.getMonth() + 1);
-                var d = String(dt.getDate());
-
-                if (m.length === 1) {
-                  month = "0" + m;
-                } else {
-                  month = m;
-                }
-                if (d.length === 1) {
-                  day = "0" + d;
-                } else {
-                  day = d;
-                }
-                return year + "-" + month + "-" + day;
-              }
-              array.push({
-                mood: doc.get("mood"),
-                timestamp: Unix_timestamp(doc.get("timestamp")._seconds)
-              });
-
-              result.push(doc.data());
-            });
-            return res.status(200).json({
-              Mood: array
-            });
-          })
-          .catch(err => {
-            let errmsg = "error getting docs," + err;
-            return res.status(416).json({
-              error2: errmsg
-            });
-          });
-      }
-    });
-  });
-});
-
+//Gathers all the data for the frontpage, combining sleep, activity and nutrition
 exports.getAllFrontpage = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
     const idToken = req.headers["authorization"].split("Bearer ")[1];
-    console.log(idToken);
-
     const verifyer = verifyToken(idToken);
+    
     verifyer.then(verify => {
-      console.log("Promise result ", verifyer);
-
       function getFitbit(paraUser, begintime, endtime) {
-     
         return new Promise((resolve, reject) => {
           let activityResult = [];
           let activityQuery = db.collection("Fitbit");
@@ -1522,25 +975,19 @@ exports.getAllFrontpage = functions.https.onRequest((req, res) => {
 
       if (verify.authenticated === true) {
         const getUser = verify.userid;
-
   
     let timeStamp = req.query.timestamp;
 
     let begintime = timestampHandler(timeStamp, "BEGINTIME");
     let endtime = timestampHandler(timeStamp, "ENDTIME");
-
-    console.log(begintime.timestamp);
-    console.log(endtime.timestamp);
-
-
+    
     // Run fitbit getter and set object for adding to database
-    Promise.all([getFitbit(getUser, begintime, endtime), getSleep(getUser, begintime, endtime), getNutrition(getUser, begintime, endtime)]).then(result => {
+    Promise.all([getFitbit(getUser, begintime, endtime), getSleep(getUser, begintime, endtime), 
+      getNutrition(getUser, begintime, endtime)]).then(result => {
       for (item in result) {
         let dataObj = {};
-        console.log(result[item]);
         let fitObj = result[item];
       }
-
       return res.status(200).json({
         result: result
       });
@@ -1549,18 +996,14 @@ exports.getAllFrontpage = functions.https.onRequest((req, res) => {
   });
 });
 
-exports.getMusicAndMood = functions.https.onRequest((req, res) => {
+// Get all markings targets for calendar
+exports.getAllMarkings = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
-    let moodResult = [];
-    let musicResult = [];
-
-    //Splits the String so that Bearer goes away. TODO: Only allow if bearer is apart of the String
     const idToken = req.headers["authorization"].split("Bearer ")[1];
     console.log(idToken);
 
     const verifyer = verifyToken(idToken);
     verifyer.then(verify => {
-      console.log("Promise result ", verifyer);
 
       function getMusic(getUser) {
         return new Promise((resolve, reject) => {
@@ -1618,21 +1061,94 @@ exports.getMusicAndMood = functions.https.onRequest((req, res) => {
         });
       }
 
+      function getSleep(getUser) {
+        return new Promise((resolve, reject) => {
+          var sleepResult = [];
+          let sleepQuery = db.collection("Sleep");
+
+          // eslint-disable-next-line promise/no-nesting
+          let sleep = sleepQuery
+            .where("userID", "==", getUser)
+            .get()
+            .then(snapshot => {
+              if (snapshot.empty) {
+                console.log("Ërror getting sleep");
+              }
+              snapshot.forEach(doc => {
+                sleepResult.push(doc.get("timestamp"));
+              });
+            })
+            .then(() => {
+              resolve({ Sleep: sleepResult });
+            })
+            .catch(err => {
+              console.log("Error getting document from sleep", err);
+              reject(err);
+              return err;
+            });
+        });
+      }
+
+      function getActivity(getUser) {
+        return new Promise((resolve, reject) => {
+          var activityResult = [];
+          let activityQuery = db.collection("Fitbit");
+
+          // eslint-disable-next-line promise/no-nesting
+          let activity = activityQuery
+            .where("userID", "==", getUser)
+            .get()
+            .then(snapshot => {
+              if (snapshot.empty) {
+                console.log("Ërror getting activity");
+              }
+              snapshot.forEach(doc => {
+                activityResult.push(doc.get("timestamp"));
+              });
+            })
+            .then(() => {
+              resolve({ Activity: activityResult });
+            })
+            .catch(err => {
+              console.log("Error getting document from activity", err);
+              reject(err);
+              return err;
+            });
+        });
+      }
+
+      function getNutrition(getUser) {
+        return new Promise((resolve, reject) => {
+          var nutritionResult = [];
+          let nutritionQuery = db.collection("Nutrition");
+
+          // eslint-disable-next-line promise/no-nesting
+          let nutrition = nutritionQuery
+            .where("userID", "==", getUser)
+            .get()
+            .then(snapshot => {
+              if (snapshot.empty) {
+                console.log("Ërror getting nutrition");
+              }
+              snapshot.forEach(doc => {
+                nutritionResult.push(doc.get("timestamp"));
+              });
+            })
+            .then(() => {
+              resolve({ Nutrition: nutritionResult });
+            })
+            .catch(err => {
+              console.log("Error getting document from nutrition", err);
+              reject(err);
+              return err;
+            });
+        });
+      }
+
       if (verify.authenticated === true) {
         const getUser = verify.userid;
 
-        /*Function for getting the fitbit objects from temp fitbit collection
-         */
-
-        // Run fitbit getter and set object for adding to database
-        // eslint-disable-next-line promise/no-nesting
-        Promise.all([getMusic(getUser), getMood(getUser)]).then(result => {
-          for (item in result) {
-            let dataObj = {};
-            console.log(result[item]);
-            let fitObj = result[item];
-          }
-
+        Promise.all([getMusic(getUser), getMood(getUser), getActivity(getUser), getNutrition(getUser), getSleep(getUser)]).then(result => {
           return res.status(200).json({
             result: result
           });
@@ -1642,3 +1158,53 @@ exports.getMusicAndMood = functions.https.onRequest((req, res) => {
   });
 });
 
+// Function for registering mood
+exports.registerFeedback = functions.https.onRequest((req, res) => {
+
+  var getData = req.body.data;
+  console.log(getData.data);
+  let time = timestampHandler(getData.timestamp);
+  getData.timestamp = time.timestamp;
+  getData.week = time.week;
+  getData.weekday = time.weekday;
+  cors(req, res, () => {
+    const idToken = req.headers["authorization"].split("Bearer ")[1];
+    console.log(idToken);
+
+    const verifyer = verifyToken(idToken);
+    verifyer.then(verify => {
+      console.log("Promise result ", verifyer);
+
+      if (verify.authenticated === true) {
+
+        const getUser = verify.userid;
+        getData.userID = getUser;
+        console.log("her er user:", getUser);
+        if (getUser === undefined) {
+          return res.status(401).json({
+            error: "User is undefined"
+          });
+        } else {
+          if (req.method !== "POST") {
+            return res.status(418).json({
+              message: "Only teaPOST allowed"
+            });
+          } else {
+
+            let collection = "Feedback";
+            let register = db
+              .collection(collection)
+              .add(getData)
+              .then(ref => {
+                console.log("Added document with ID: ", ref.id);
+                return res.status(200).json({
+                  toCollection: collection,
+                  registeredData: getData
+                });
+              });
+          }
+        }
+      }
+    });
+  });
+});
