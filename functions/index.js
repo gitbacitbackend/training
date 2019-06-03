@@ -22,7 +22,6 @@ const ENDTIME = "T23:59:59";
 
 // Function for registering mood, insert data into mood collection
 exports.registerMood = functions.https.onRequest((req, res) => {
-
   // Get body from post with data for mood
   var getData = req.body.data;
   console.log(getData.data);
@@ -82,7 +81,7 @@ exports.registerData = functions.firestore
     // access a particular field as you would any JS property
     let userID = newValue.userID;
     let mood = newValue.mood;
-  
+
     // String for song ID's built by function
     let songs = "";
 
@@ -106,7 +105,7 @@ exports.registerData = functions.firestore
     */
     function getAudioFeatures(id) {
       return new Promise((resolve, reject) => {
-        // console.log("Started audio features analysis with ", id);
+        console.log("Started audio features analysis with ", id);
         spotify
           .request("https://api.spotify.com/v1/audio-features?ids=" + id)
           .then(data => {
@@ -209,6 +208,7 @@ exports.registerData = functions.firestore
           fitObj.week.toString() +
           fitObj.weekday.toString() +
           fitObj.userID;
+        console.log(dataObj);
         // eslint-disable-next-line promise/no-nesting
         db.collection("Fitbit")
           .doc(docID)
@@ -229,7 +229,7 @@ exports.registerData = functions.firestore
           .delete();
       }
     });
-    
+
     // Promise resolving getSongs then handle the data from both getters. Resolve on adding merged item to database.
     Promise.all([getSongs()]).then(res => {
       // eslint-disable-next-line promise/no-nesting
@@ -258,6 +258,7 @@ exports.registerData = functions.firestore
           songObj.weekday = tracks[item].weekday;
           songObj.year = tracks[item].year;
           songObj.mood = mood;
+          console.log(songObj);
           // eslint-disable-next-line promise/no-nesting
           db.collection("Music")
             .add(songObj)
@@ -271,8 +272,8 @@ exports.registerData = functions.firestore
               return error;
             });
         }
-      //DELETE song objects in temp collection for user
-      for (item in deleteSongs) {
+        //DELETE song objects in temp collection for user
+        for (item in deleteSongs) {
           db.collection("TempMusic")
             .doc(deleteSongs[item])
             .delete();
@@ -428,6 +429,7 @@ exports.tempDigiMe = functions.https.onRequest((req, res) => {
 
   // obj [body] is actual filedata recieved from digi.me in form of JSON string objects
   let obj = req.body.data;
+  const idToken = req.headers["authorization"].split("Bearer ")[1];
   const verifyer = verifyToken(idToken);
   verifyer.then(verify => {
     console.log("Promise result ", verifyer);
@@ -529,7 +531,7 @@ exports.getFitbit = functions.https.onRequest((req, res) => {
     const getWeek = parseInt(req.query.weekID);
     const query = db.collection("Fitbit");
 
-    
+
     const verifyer = verifyToken(idToken);
     verifyer.then(verify => {
 
@@ -850,11 +852,11 @@ exports.getAllMusic = functions.https.onRequest((req, res) => {
                   happy.push(doc.data());
                 } else if (doc.get("mood").toLowerCase() === "excellent") {
                   happy.push(doc.data());
-                }else if (doc.get("mood").toLowerCase() === "sad") {
+                } else if (doc.get("mood").toLowerCase() === "sad") {
                   sad.push(doc.data());
                 } else if (doc.get("mood").toLowerCase() === "terrible") {
                   sad.push(doc.data());
-                }else {
+                } else {
                   neutral.push(doc.data());
                 }
               });
@@ -884,13 +886,13 @@ exports.getAllFrontpage = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
     const idToken = req.headers["authorization"].split("Bearer ")[1];
     const verifyer = verifyToken(idToken);
-    
+
     verifyer.then(verify => {
       function getFitbit(paraUser, begintime, endtime) {
         return new Promise((resolve, reject) => {
           let activityResult = [];
           let activityQuery = db.collection("Fitbit");
-  
+
           let fitbit = activityQuery
             .where("userID", "==", paraUser)
             .where("timestamp", ">", begintime.timestamp)
@@ -920,7 +922,7 @@ exports.getAllFrontpage = functions.https.onRequest((req, res) => {
         return new Promise((resolve, reject) => {
           var sleepResult = [];
           let sleepQuery = db.collection("Sleep");
-  
+
           let sleep = sleepQuery
             .where("userID", "==", paraUser)
             .where("timestamp", ">", begintime.timestamp)
@@ -948,7 +950,7 @@ exports.getAllFrontpage = functions.https.onRequest((req, res) => {
         return new Promise((resolve, reject) => {
           let nutritionResult = [];
           let nutritionQuery = db.collection("Nutrition");
-  
+
           let nutrition = nutritionQuery
             .where("userID", "==", paraUser)
             .where("timestamp", ">", begintime.timestamp)
@@ -975,24 +977,25 @@ exports.getAllFrontpage = functions.https.onRequest((req, res) => {
 
       if (verify.authenticated === true) {
         const getUser = verify.userid;
-  
-    let timeStamp = req.query.timestamp;
 
-    let begintime = timestampHandler(timeStamp, "BEGINTIME");
-    let endtime = timestampHandler(timeStamp, "ENDTIME");
-    
-    // Run fitbit getter and set object for adding to database
-    Promise.all([getFitbit(getUser, begintime, endtime), getSleep(getUser, begintime, endtime), 
-      getNutrition(getUser, begintime, endtime)]).then(result => {
-      for (item in result) {
-        let dataObj = {};
-        let fitObj = result[item];
+        let timeStamp = req.query.timestamp;
+
+        let begintime = timestampHandler(timeStamp, "BEGINTIME");
+        let endtime = timestampHandler(timeStamp, "ENDTIME");
+
+        // Run fitbit getter and set object for adding to database
+        Promise.all([getFitbit(getUser, begintime, endtime), getSleep(getUser, begintime, endtime),
+        getNutrition(getUser, begintime, endtime)]).then(result => {
+          for (item in result) {
+            let dataObj = {};
+            let fitObj = result[item];
+          }
+          return res.status(200).json({
+            result: result
+          });
+        });
       }
-      return res.status(200).json({
-        result: result
-      });
     });
-  }});
   });
 });
 
@@ -1208,3 +1211,940 @@ exports.registerFeedback = functions.https.onRequest((req, res) => {
     });
   });
 });
+
+/*
+4: 1559661032
+3: 1559574632
+2: 1559488050
+1: 1559401650
+31: 1559315250
+30: 1559228850
+29: 1559142450
+28: 1559056050
+27: 1558969650
+26: 1558883250
+25: 1558796850
+24: 1558710450
+23: 1558624050
+22: 1558537650
+21: 1558451250
+20: 1558364850
+*/
+
+//userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
+exports.bigBertha = functions.https.onRequest((req, res) => {
+  cors(req, res, () => {
+    //dateExample: admin.firestore.Timestamp.fromDate(new Date('December 10, 1815')),
+    var mood = [
+      {
+        comment: 'Pizza time.',
+        mood: 'excellent',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558364850 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        week: 21,
+        weekday: 1
+      },
+      {
+        comment: 'Had a stone in my shoe.',
+        mood: 'neutral',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558451250 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        week: 21,
+        weekday: 2
+      },
+      {
+        comment: 'Broccoli for dinner.',
+        mood: 'sad',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558537650 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        week: 21,
+        weekday: 3
+      },
+      {
+        comment: 'My grandmother died.',
+        mood: 'terrible',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558624050 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        week: 21,
+        weekday: 4
+      },
+      {
+        comment: 'I overslept.',
+        mood: 'terrible',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558710450 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        week: 21,
+        weekday: 5
+      },
+      {
+        comment: 'Got an A on my exam.',
+        mood: 'happy',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558796850 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        week: 21,
+        weekday: 6
+      },
+      {
+        comment: 'Found 20 dollar!',
+        mood: 'excellent',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558883250 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        week: 21,
+        weekday: 7
+      },
+      {
+        comment: 'Today I ate some great food',
+        mood: 'happy',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558969650 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        week: 22,
+        weekday: 1
+      },
+      {
+        comment: 'An avarage day',
+        mood: 'neutral',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559056050 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        week: 22,
+        weekday: 2
+      },
+      {
+        comment: 'Super sad, bc Amy was mean to me',
+        mood: 'terrible',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559142450 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        week: 22,
+        weekday: 3
+      },
+      {
+        comment: 'Today is the best day of my life, I got the best job',
+        mood: 'excellent',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559228850 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        week: 22,
+        weekday: 4
+      },
+      {
+        comment: 'Things are hard at my new job',
+        mood: 'neutral',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559315250 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        week: 22,
+        weekday: 5
+      },
+      {
+        comment: 'Had my birthday, so I am happy',
+        mood: 'excellent',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559401650 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        week: 22,
+        weekday: 6
+      },
+      {
+        comment: 'Got to use mye presents!',
+        mood: 'happy',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559488050 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        week: 22,
+        weekday: 7
+      },
+      {
+        comment: 'I had a bad time in the rain',
+        mood: 'sad',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559574632 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        week: 23,
+        weekday: 1
+      },
+      {
+        comment: 'Finished my exams',
+        mood: 'happy',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559661032 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        week: 23,
+        weekday: 2
+      },
+    ];
+    var music = [
+      {
+        energy: 0.599,
+        danceability: 0.817,
+        valence: 0.548,
+        artist: 'Survivor',
+        title: 'Eye of the Tiger',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558364850 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        id: '2KH16WveTQWT6KOG9Rg6e2',
+        week: 21,
+        weekday: 1,
+        year: 2019,
+        mood: 'happy'
+      },
+      {
+        energy: 0.659,
+        danceability: 0.576,
+        valence: 0.717,
+        artist: 'AC/DC',
+        title: 'Rock and Roll Ain\'t Noise Pollution',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558451250 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        id: '6J17MkMmuzBiIOjRH6MOBZ',
+        week: 21,
+        weekday: 2,
+        year: 2019,
+        mood: 'sad'
+      },
+      {
+        energy: 0.401,
+        danceability: 0.518,
+        valence: 0.171,
+        artist: 'Johnny Cash',
+        title: 'Hurt',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558537650 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        id: '28cnXtME493VX9NOw9cIUh',
+        week: 21,
+        weekday: 3,
+        year: 2019,
+        mood: 'sad'
+      },
+      {
+        energy: 0.020,
+        danceability: 0.150,
+        valence: 0.100,
+        artist: 'Sad man',
+        title: 'Sad song',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558624050 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        id: '2KH16WveTQWT6KOG9Rg6e2',
+        week: 21,
+        weekday: 4,
+        year: 2019,
+        mood: 'excellent'
+      },
+      {
+        energy: 0.620,
+        danceability: 0.576,
+        valence: 0.121,
+        artist: 'Jack in a box',
+        title: 'This time',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558710450 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        id: '6J17MkMmuzBiIOjRH6MOBZ',
+        week: 21,
+        weekday: 5,
+        year: 2019,
+        mood: 'terrible'
+      },
+      {
+        energy: 0.100,
+        danceability: 0.421,
+        valence: 0.381,
+        artist: 'Johnny Cash',
+        title: 'Hurt',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558796850 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        id: '28cnXtME493VX9NOw9cIUh',
+        week: 21,
+        weekday: 6,
+        year: 2019,
+        mood: 'terrible'
+      },
+      {
+        energy: 0.599,
+        danceability: 0.817,
+        valence: 0.548,
+        artist: 'Survivor',
+        title: 'Eye of the Tiger',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558883250 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        id: '2KH16WveTQWT6KOG9Rg6e2',
+        week: 21,
+        weekday: 7,
+        year: 2019,
+        mood: 'neutral'
+      },
+      {
+        energy: 0.750,
+        danceability: 0.200,
+        valence: 0.689,
+        artist: 'Metallica',
+        title: 'Nothing else mattress',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558969650 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        id: '6J17MkMmuzBiIOjRH6MOBZ',
+        week: 22,
+        weekday: 1,
+        year: 2019,
+        mood: 'terrible'
+      },
+      {
+        energy: 0.401,
+        danceability: 0.518,
+        valence: 0.171,
+        artist: 'Lil Tomato',
+        title: 'Fruit song',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559056050 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        id: '28cnXtME493VX9NOw9cIUh',
+        week: 22,
+        weekday: 2,
+        year: 2019,
+        mood: 'happy'
+      },
+      {
+        energy: 0.900,
+        danceability: 0.42,
+        valence: 0.420,
+        artist: 'Andy Harrison',
+        title: 'Shine On',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559142450 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        id: '2KH16WveTQWT6KOG9Rg6e2',
+        week: 22,
+        weekday: 3,
+        year: 2019,
+        mood: 'happy'
+      },
+      {
+        energy: 0.555,
+        danceability: 0.666,
+        valence: 0.777,
+        artist: 'Imaculature',
+        title: 'Rock this town',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559228850 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        id: '6J17MkMmuzBiIOjRH6MOBZ',
+        week: 22,
+        weekday: 4,
+        year: 2019,
+        mood: 'sad'
+      },
+      {
+        energy: 0.150,
+        danceability: 0.200,
+        valence: 0.988,
+        artist: 'Jhonny Logan',
+        title: 'Too cool',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559315250 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        id: '28cnXtME493VX9NOw9cIUh',
+        week: 22,
+        weekday: 5,
+        year: 2019,
+        mood: 'excellent'
+      },
+      {
+        energy: 0.599,
+        danceability: 0.817,
+        valence: 0.548,
+        artist: 'Survivor',
+        title: 'Eye of the Tiger',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559401650 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        id: '2KH16WveTQWT6KOG9Rg6e2',
+        week: 22,
+        weekday: 6,
+        year: 2019,
+        mood: 'excellent'
+      },
+      {
+        energy: 0.659,
+        danceability: 0.576,
+        valence: 0.717,
+        artist: 'AC/DC',
+        title: 'Rock and Roll Ain\'t Noise Pollution',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559488050 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        id: '6J17MkMmuzBiIOjRH6MOBZ',
+        week: 22,
+        weekday: 7,
+        year: 2019,
+        mood: 'happy'
+      },
+      {
+        energy: 0.401,
+        danceability: 0.518,
+        valence: 0.171,
+        artist: 'Johnny Cash',
+        title: 'Hurt',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559574632 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        id: '28cnXtME493VX9NOw9cIUh',
+        week: 23,
+        weekday: 1,
+        year: 2019,
+        mood: 'terrible'
+      },
+      {
+        energy: 0.251,
+        danceability: 0.766,
+        valence: 0.171,
+        artist: 'Brage Fosso',
+        title: 'Gitbacit e kule',
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559661032 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+        id: '28cnXtME493VX9NOw9cIUh',
+        week: 23,
+        weekday: 2,
+        year: 2019,
+        mood: 'happy'
+      },
+
+    ];
+    /*
+
+
+
+
+
+
+
+*/
+    var fitbit = [
+      {
+        calories: 1920,
+        mood: 'excellent',
+        goals: {
+          activeminutes: 30,
+          caloriesout: 2000,
+          distance: 8.05,
+          steps: 10000,
+        },
+        steps: 1250,
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558364850 * 1000)),
+        userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
+        week: 21,
+        weekday: 1,
+        year: 2019,
+      },
+      {
+        calories: 1920,
+        mood: 'sad',
+        goals: {
+          activeminutes: 30,
+          caloriesout: 2000,
+          distance: 8.05,
+          steps: 10000,
+        },
+        steps: 4265,
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558451250 * 1000)),
+        userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
+        week: 21,
+        weekday: 2,
+        year: 2019,
+      },
+      {
+        calories: 1815,
+        mood: 'terrible',
+        goals: {
+          activeminutes: 30,
+          caloriesout: 2000,
+          distance: 8.05,
+          steps: 10000,
+        },
+        steps: 2322,
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558537650 * 1000)),
+        userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
+        week: 21,
+        weekday: 3,
+        year: 2019,
+      },
+      {
+        calories: 1815,
+        mood: 'happy',
+        goals: {
+          activeminutes: 30,
+          caloriesout: 2000,
+          distance: 8.05,
+          steps: 10000,
+        },
+        steps: 232,
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558624050 * 1000)),
+        userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
+        week: 21,
+        weekday: 4,
+        year: 2019,
+      },
+      {
+        calories: 1815,
+        mood: 'neutral',
+        goals: {
+          activeminutes: 30,
+          caloriesout: 2000,
+          distance: 8.05,
+          steps: 10000,
+        },
+        steps: 4245,
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558710450 * 1000)),
+        userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
+        week: 21,
+        weekday: 5,
+        year: 2019,
+      },
+      {
+        calories: 1815,
+        mood: 'excellent',
+        goals: {
+          activeminutes: 30,
+          caloriesout: 2000,
+          distance: 8.05,
+          steps: 10000,
+        },
+        steps: 4912,
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558796850 * 1000)),
+        userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
+        week: 21,
+        weekday: 6,
+        year: 2019,
+      },
+      {
+        calories: 1815,
+        mood: 'excellent',
+        goals: {
+          activeminutes: 30,
+          caloriesout: 2000,
+          distance: 8.05,
+          steps: 10000,
+        },
+        steps: 3214,
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558883250 * 1000)),
+        userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
+        week: 21,
+        weekday: 7,
+        year: 2019,
+      },
+      {
+        calories: 2342,
+        mood: 'sad',
+        goals: {
+          activeminutes: 30,
+          caloriesout: 2000,
+          distance: 8.05,
+          steps: 10000,
+        },
+        steps: 2425,
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558969650 * 1000)),
+        userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
+        week: 22,
+        weekday: 1,
+        year: 2019,
+      },
+      {
+        calories: 4215,
+        mood: 'happy',
+        goals: {
+          activeminutes: 30,
+          caloriesout: 2000,
+          distance: 8.05,
+          steps: 10000,
+        },
+        steps: 8673,
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559056050 * 1000)),
+        userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
+        week: 22,
+        weekday: 2,
+        year: 2019,
+      },
+      {
+        calories: 1815,
+        mood: 'terrible',
+        goals: {
+          activeminutes: 30,
+          caloriesout: 2000,
+          distance: 8.05,
+          steps: 10000,
+        },
+        steps: 2322,
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559142450 * 1000)),
+        userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
+        week: 22,
+        weekday: 3,
+        year: 2019,
+      },
+      {
+        calories: 1325,
+        mood: 'neutral',
+        goals: {
+          activeminutes: 30,
+          caloriesout: 2000,
+          distance: 8.05,
+          steps: 10000,
+        },
+        steps: 2451,
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559228850 * 1000)),
+        userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
+        week: 22,
+        weekday: 4,
+        year: 2019,
+      },
+      {
+        calories: 2415,
+        mood: 'neutral',
+        goals: {
+          activeminutes: 30,
+          caloriesout: 2000,
+          distance: 8.05,
+          steps: 10000,
+        },
+        steps: 2415,
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559315250 * 1000)),
+        userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
+        week: 22,
+        weekday: 5,
+        year: 2019,
+      },
+      {
+        calories: 1256,
+        mood: 'sad',
+        goals: {
+          activeminutes: 30,
+          caloriesout: 2000,
+          distance: 8.05,
+          steps: 10000,
+        },
+        steps: 1587,
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559401650 * 1000)),
+        userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
+        week: 22,
+        weekday: 6,
+        year: 2019,
+      },
+      {
+        calories: 1596,
+        mood: 'excellent',
+        goals: {
+          activeminutes: 30,
+          caloriesout: 2000,
+          distance: 8.05,
+          steps: 10000,
+        },
+        steps: 2109,
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559488050 * 1000)),
+        userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
+        week: 22,
+        weekday: 7,
+        year: 2019,
+      },
+      {
+        calories: 289,
+        mood: 'happy',
+        goals: {
+          activeminutes: 30,
+          caloriesout: 2000,
+          distance: 8.05,
+          steps: 10000,
+        },
+        steps: 2404,
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559574632 * 1000)),
+        userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
+        week: 23,
+        weekday: 1,
+        year: 2019,
+      },
+      {
+        calories: 450,
+        mood: 'happy',
+        goals: {
+          activeminutes: 30,
+          caloriesout: 2000,
+          distance: 8.05,
+          steps: 10000,
+        },
+        steps: 2800,
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559661032 * 1000)),
+        userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
+        week: 23,
+        weekday: 2,
+        year: 2019,
+      },
+
+    ];
+
+    var nutrition = [
+      {
+        calories: 1000,
+        goals: {
+          calories: 2500
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559661032 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
+      },
+      {
+        calories: 900,
+        goals: {
+          calories: 2500
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559574632 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
+      },
+      {
+        calories: 2000,
+        goals: {
+          calories: 2500
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559488050 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
+      },
+      {
+        calories: 2200,
+        goals: {
+          calories: 2500
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559401650 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
+      },
+      {
+        calories: 1900,
+        goals: {
+          calories: 2500
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559315250 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
+      },
+      {
+        calories: 1600,
+        goals: {
+          calories: 2500
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559228850 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
+      },
+      {
+        calories: 2300,
+        goals: {
+          calories: 2500
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559142450 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
+      },
+      {
+        calories: 2400,
+        goals: {
+          calories: 2500
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559056050 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
+      },
+      {
+        calories: 1400,
+        goals: {
+          calories: 2500
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558969650 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
+      },
+      {
+        calories: 1300,
+        goals: {
+          calories: 2500
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558883250 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
+      },
+      {
+        calories: 1560,
+        goals: {
+          calories: 2500
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558796850 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
+      },
+      {
+        calories: 1340,
+        goals: {
+          calories: 2500
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558710450 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
+      },
+      {
+        calories: 1480,
+        goals: {
+          calories: 2500
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558624050 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
+      },
+      {
+        calories: 1210,
+        goals: {
+          calories: 2500
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558537650 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
+      },
+      {
+        calories: 1900,
+        goals: {
+          calories: 2500
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558451250 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
+      },
+      {
+        calories: 1570,
+        goals: {
+          calories: 2500
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558364850 * 1000)),
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
+      },
+    ];
+    var sleep = [
+      {
+        duration: 7,
+        goals: {
+          duration: 8
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558364850 * 1000)),//
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+      }, {
+        duration: 6,
+        goals: {
+          duration: 8
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558451250 * 1000)),//
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+      }, {
+        duration: 9,
+        goals: {
+          duration: 8
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558537650 * 1000)),//
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+      }, {
+        duration: 4,
+        goals: {
+          duration: 8
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558624050 * 1000)),//
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+      }, {
+        duration: 5,
+        goals: {
+          duration: 8
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558710450 * 1000)),//
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+      }, {
+        duration: 2,
+        goals: {
+          duration: 8
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558796850 * 1000)),//
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+      }, {
+        duration: 11,
+        goals: {
+          duration: 8
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558883250 * 1000)),//
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+      }, {
+        duration: 8,
+        goals: {
+          duration: 8
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558969650 * 1000)),//
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+      }, {
+        duration: 8,
+        goals: {
+          duration: 8
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559056050 * 1000)),//
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+      }, {
+        duration: 7,
+        goals: {
+          duration: 8
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559142450 * 1000)),//
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+      }, {
+        duration: 6,
+        goals: {
+          duration: 8
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559228850 * 1000)),//
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+      }, {
+        duration: 7,
+        goals: {
+          duration: 8
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559315250 * 1000)),//
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+      }, {
+        duration: 6,
+        goals: {
+          duration: 8
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559401650 * 1000)),//
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+      }, {
+        duration: 9,
+        goals: {
+          duration: 8
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559488050 * 1000)),//
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+      }, {
+        duration: 10,
+        goals: {
+          duration: 8
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559574632 * 1000)),//
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+      }, {
+        duration: 10,
+        goals: {
+          duration: 8
+        },
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559661032 * 1000)),//
+        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
+      },
+    ];
+    // Add a new document in collection "cities" with ID 'LA'
+    var moodCollection = db.collection('Mood');
+    var sleepCollection = db.collection('Sleep');
+    var nutritionCollection = db.collection('Nutrition');
+    var fitbitCollection = db.collection('Fitbit');
+    var musicCollection = db.collection('Music');
+
+    for (entry in mood) {
+      moodCollection.add(mood[entry])
+    }
+    for (entry in sleep) {
+      sleepCollection.add(sleep[entry])
+    }
+    for (entry in nutrition) {
+      nutritionCollection.add(nutrition[entry])
+    }
+    for (entry in fitbit) {
+      fitbitCollection.add(fitbit[entry])
+    }
+    for (entry in music) {
+      musicCollection.add(music[entry])
+    }
+  });
+});
+/*
+4: 1559661032
+3: 1559574632
+2: 1559488050
+1: 1559401650
+31: 1559315250
+30: 1559228850
+29: 1559142450
+28: 1559056050
+27: 1558969650
+26: 1558883250
+25: 1558796850
+24: 1558710450
+23: 1558624050
+22: 1558537650
+21: 1558451250
+20: 1558364850
+*/
