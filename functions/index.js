@@ -208,7 +208,7 @@ exports.registerData = functions.firestore
           fitObj.week.toString() +
           fitObj.weekday.toString() +
           fitObj.userID;
-        console.log(dataObj);
+        // console.log(dataObj);
         // eslint-disable-next-line promise/no-nesting
         db.collection("Fitbit")
           .doc(docID)
@@ -258,7 +258,7 @@ exports.registerData = functions.firestore
           songObj.weekday = tracks[item].weekday;
           songObj.year = tracks[item].year;
           songObj.mood = mood;
-          console.log(songObj);
+          // console.log(songObj);
           // eslint-disable-next-line promise/no-nesting
           db.collection("Music")
             .add(songObj)
@@ -1231,7 +1231,8 @@ exports.registerFeedback = functions.https.onRequest((req, res) => {
 20: 1558364850
 */
 
-//userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
+
+//A function for adding testdata to the feelio App. The Data will be added to the user Gitbacit@gmail.com | Password: tester
 exports.bigBertha = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
     //dateExample: admin.firestore.Timestamp.fromDate(new Date('December 10, 1815')),
@@ -1263,10 +1264,10 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
       {
         comment: 'My grandmother died.',
         mood: 'terrible',
-        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558624050 * 1000)),
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558537650 * 1000)),
         userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
         week: 21,
-        weekday: 4
+        weekday: 3
       },
       {
         comment: 'I overslept.',
@@ -1295,10 +1296,10 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
       {
         comment: 'Today I ate some great food',
         mood: 'happy',
-        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558969650 * 1000)),
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558883250 * 1000)),
         userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
-        week: 22,
-        weekday: 1
+        week: 21,
+        weekday: 7
       },
       {
         comment: 'An avarage day',
@@ -1335,10 +1336,10 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
       {
         comment: 'Had my birthday, so I am happy',
         mood: 'excellent',
-        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559401650 * 1000)),
+        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559315250 * 1000)),
         userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
         week: 22,
-        weekday: 6
+        weekday: 5
       },
       {
         comment: 'Got to use mye presents!',
@@ -1577,11 +1578,11 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
         mood: 'terrible'
       },
       {
-        energy: 0.251,
+        energy: 0.999,
         danceability: 0.766,
-        valence: 0.171,
-        artist: 'Brage Fosso',
-        title: 'Gitbacit e kule',
+        valence: 0.800,
+        artist: 'Pharell',
+        title: 'Happy',
         timestamp: admin.firestore.Timestamp.fromDate(new Date(1559661032 * 1000)),
         userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
         id: '28cnXtME493VX9NOw9cIUh',
@@ -1592,15 +1593,7 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
       },
 
     ];
-    /*
 
-
-
-
-
-
-
-*/
     var fitbit = [
       {
         calories: 1920,
@@ -1611,7 +1604,7 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
           distance: 8.05,
           steps: 10000,
         },
-        steps: 1250,
+        steps: 8392,
         timestamp: admin.firestore.Timestamp.fromDate(new Date(1558364850 * 1000)),
         userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
         week: 21,
@@ -1627,7 +1620,7 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
           distance: 8.05,
           steps: 10000,
         },
-        steps: 4265,
+        steps: 7891,
         timestamp: admin.firestore.Timestamp.fromDate(new Date(1558451250 * 1000)),
         userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
         week: 21,
@@ -1643,7 +1636,7 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
           distance: 8.05,
           steps: 10000,
         },
-        steps: 2322,
+        steps: 11243,
         timestamp: admin.firestore.Timestamp.fromDate(new Date(1558537650 * 1000)),
         userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
         week: 21,
@@ -1659,7 +1652,7 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
           distance: 8.05,
           steps: 10000,
         },
-        steps: 232,
+        steps: 14924,
         timestamp: admin.firestore.Timestamp.fromDate(new Date(1558624050 * 1000)),
         userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
         week: 21,
@@ -1691,7 +1684,7 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
           distance: 8.05,
           steps: 10000,
         },
-        steps: 4912,
+        steps: 10344,
         timestamp: admin.firestore.Timestamp.fromDate(new Date(1558796850 * 1000)),
         userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
         week: 21,
@@ -1707,7 +1700,7 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
           distance: 8.05,
           steps: 10000,
         },
-        steps: 3214,
+        steps: 8654,
         timestamp: admin.firestore.Timestamp.fromDate(new Date(1558883250 * 1000)),
         userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
         week: 21,
@@ -1739,7 +1732,7 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
           distance: 8.05,
           steps: 10000,
         },
-        steps: 8673,
+        steps: 14650,
         timestamp: admin.firestore.Timestamp.fromDate(new Date(1559056050 * 1000)),
         userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
         week: 22,
@@ -1755,7 +1748,7 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
           distance: 8.05,
           steps: 10000,
         },
-        steps: 2322,
+        steps: 7842,
         timestamp: admin.firestore.Timestamp.fromDate(new Date(1559142450 * 1000)),
         userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
         week: 22,
@@ -1769,9 +1762,9 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
           activeminutes: 30,
           caloriesout: 2000,
           distance: 8.05,
-          steps: 10000,
+          steps: 6969,
         },
-        steps: 2451,
+        steps: 13431,
         timestamp: admin.firestore.Timestamp.fromDate(new Date(1559228850 * 1000)),
         userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
         week: 22,
@@ -1803,7 +1796,7 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
           distance: 8.05,
           steps: 10000,
         },
-        steps: 1587,
+        steps: 6413,
         timestamp: admin.firestore.Timestamp.fromDate(new Date(1559401650 * 1000)),
         userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
         week: 22,
@@ -1819,7 +1812,7 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
           distance: 8.05,
           steps: 10000,
         },
-        steps: 2109,
+        steps: 11034,
         timestamp: admin.firestore.Timestamp.fromDate(new Date(1559488050 * 1000)),
         userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
         week: 22,
@@ -1835,7 +1828,7 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
           distance: 8.05,
           steps: 10000,
         },
-        steps: 2404,
+        steps: 9993,
         timestamp: admin.firestore.Timestamp.fromDate(new Date(1559574632 * 1000)),
         userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
         week: 23,
@@ -1851,7 +1844,7 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
           distance: 8.05,
           steps: 10000,
         },
-        steps: 2800,
+        steps: 1284,
         timestamp: admin.firestore.Timestamp.fromDate(new Date(1559661032 * 1000)),
         userID: "2EwPQNCYP0fm9ZAC8C15VQX6KAn1",
         week: 23,
@@ -1860,6 +1853,7 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
       },
 
     ];
+
 
     var nutrition = [
       {
@@ -1887,14 +1881,6 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
         userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
       },
       {
-        calories: 2200,
-        goals: {
-          calories: 2500
-        },
-        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559401650 * 1000)),
-        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
-      },
-      {
         calories: 1900,
         goals: {
           calories: 2500
@@ -1918,28 +1904,13 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
         timestamp: admin.firestore.Timestamp.fromDate(new Date(1559142450 * 1000)),
         userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
       },
-      {
-        calories: 2400,
-        goals: {
-          calories: 2500
-        },
-        timestamp: admin.firestore.Timestamp.fromDate(new Date(1559056050 * 1000)),
-        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
-      },
+
       {
         calories: 1400,
         goals: {
           calories: 2500
         },
         timestamp: admin.firestore.Timestamp.fromDate(new Date(1558969650 * 1000)),
-        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
-      },
-      {
-        calories: 1300,
-        goals: {
-          calories: 2500
-        },
-        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558883250 * 1000)),
         userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
       },
       {
@@ -1964,14 +1935,6 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
           calories: 2500
         },
         timestamp: admin.firestore.Timestamp.fromDate(new Date(1558624050 * 1000)),
-        userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
-      },
-      {
-        calories: 1210,
-        goals: {
-          calories: 2500
-        },
-        timestamp: admin.firestore.Timestamp.fromDate(new Date(1558537650 * 1000)),
         userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1'
       },
       {
@@ -2084,21 +2047,21 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
         timestamp: admin.firestore.Timestamp.fromDate(new Date(1559401650 * 1000)),//
         userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
       }, {
-        duration: 9,
+        duration: 5,
         goals: {
           duration: 8
         },
         timestamp: admin.firestore.Timestamp.fromDate(new Date(1559488050 * 1000)),//
         userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
       }, {
-        duration: 10,
+        duration: 6,
         goals: {
           duration: 8
         },
         timestamp: admin.firestore.Timestamp.fromDate(new Date(1559574632 * 1000)),//
         userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
       }, {
-        duration: 10,
+        duration: 7,
         goals: {
           duration: 8
         },
@@ -2106,7 +2069,7 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
         userID: '2EwPQNCYP0fm9ZAC8C15VQX6KAn1',
       },
     ];
-    // Add a new document in collection "cities" with ID 'LA'
+
     var moodCollection = db.collection('Mood');
     var sleepCollection = db.collection('Sleep');
     var nutritionCollection = db.collection('Nutrition');
@@ -2123,7 +2086,25 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
       nutritionCollection.add(nutrition[entry])
     }
     for (entry in fitbit) {
-      fitbitCollection.add(fitbit[entry])
+      // fitbitCollection.add(fitbit[entry])
+      let docID =
+        fitbit[entry].year.toString() +
+        fitbit[entry].week.toString() +
+        fitbit[entry].weekday.toString() +
+        fitbit[entry].userID;
+      // console.log(dataObj);
+      // eslint-disable-next-line promise/no-nesting
+      db.collection("Fitbit")
+        .doc(docID)
+        .create(fitbit[entry])
+        // eslint-disable-next-line no-loop-func
+        .then(() => {
+          console.log("Fitbit Document updated or written with ID: ", docID);
+        })
+        // eslint-disable-next-line no-loop-func
+        .catch(error => {
+          console.log("Error adding document: ", error);
+        });
     }
     for (entry in music) {
       musicCollection.add(music[entry])
