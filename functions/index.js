@@ -1212,25 +1212,6 @@ exports.registerFeedback = functions.https.onRequest((req, res) => {
   });
 });
 
-/*
-4: 1559661032
-3: 1559574632
-2: 1559488050
-1: 1559401650
-31: 1559315250
-30: 1559228850
-29: 1559142450
-28: 1559056050
-27: 1558969650
-26: 1558883250
-25: 1558796850
-24: 1558710450
-23: 1558624050
-22: 1558537650
-21: 1558451250
-20: 1558364850
-*/
-
 
 //A function for adding testdata to the feelio App. The Data will be added to the user Gitbacit@gmail.com | Password: tester
 exports.bigBertha = functions.https.onRequest((req, res) => {
@@ -2111,21 +2092,3 @@ exports.bigBertha = functions.https.onRequest((req, res) => {
     }
   });
 });
-/*
-4: 1559661032
-3: 1559574632
-2: 1559488050
-1: 1559401650
-31: 1559315250
-30: 1559228850
-29: 1559142450
-28: 1559056050
-27: 1558969650
-26: 1558883250
-25: 1558796850
-24: 1558710450
-23: 1558624050
-22: 1558537650
-21: 1558451250
-20: 1558364850
-*/
