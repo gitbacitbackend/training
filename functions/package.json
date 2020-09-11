@@ -20,7 +20,7 @@
     "firebase-tools": "^6.6.0",
     "latest": "^0.2.0",
     "moment": "^2.24.0",
-    "node-fetch": "^2.3.0",
+    "node-fetch": "^2.6.1",
     "node-spotify-api": "^1.0.7"
   },
   "devDependencies": {
